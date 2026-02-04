@@ -1,0 +1,57 @@
+services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpass}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-appdb}
+      MYSQL_USER: ${MYSQL_USER:-appuser}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-apppass}
+      TZ: Asia/Tokyo
+    ports:
+      - "3308:3306"   # 外(ホスト):中(コンテナ=3306)
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_0900_ai_ci
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_USER: ${MYSQL_USER:-appuser}
+      PMA_PASSWORD: ${MYSQL_PASSWORD:-apppass}
+      UPLOAD_LIMIT: 64M
+      TZ: Asia/Tokyo
+    ports:
+      - "${PHPMYADMIN_PORT:-8082}:80"
+
+  api:
+    image: php:8.2-apache
+    restart: unless-stopped
+    depends_on:
+      - db
+    ports:
+      - "${API_PORT:-8080}:80"
+    volumes:
+      - ./api:/var/www/html
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306          # ★ここは3306（コンテナ内接続）
+      DB_NAME: ${MYSQL_DATABASE:-appdb}
+      DB_USER: ${MYSQL_USER:-appuser}
+      DB_PASS: ${MYSQL_PASSWORD:-apppass}
+      TZ: Asia/Tokyo
+    command: >
+      bash -lc "docker-php-ext-install pdo_mysql &&
+      a2enmod rewrite &&
+      apache2-foreground"
+
+volumes:
+  mysql_data:

@@ -328,6 +328,24 @@
       </h1>
       <p class="text-slate-500 font-medium">理想のロードマップを作成するための、完璧な「種」を撒きましょう。</p>
       <div id="status" class="mt-4 font-bold text-slate-400 min-h-[1.5em]"></div>
+      <div class="flex flex-wrap items-center justify-center gap-3 mt-4">
+        <button id="stats-open"
+          class="px-4 py-2 rounded-full bg-white text-indigo-600 font-black shadow-sm border border-indigo-100 hover:shadow-md hover:scale-105 transition-all text-sm">
+          成績分析
+        </button>
+        <button id="review-toggle"
+          class="px-4 py-2 rounded-full bg-emerald-50 text-emerald-600 font-black shadow-sm border border-emerald-100 hover:shadow-md hover:scale-105 transition-all text-sm">
+          弱点克服モード
+        </button>
+        <button id="exit-review"
+          class="hidden px-4 py-2 rounded-full bg-slate-100 text-slate-600 font-bold shadow-sm border border-slate-200 hover:shadow-md hover:scale-105 transition-all text-sm">
+          通常モードに戻る
+        </button>
+        <span id="review-indicator"
+          class="hidden px-3 py-1 rounded-full bg-emerald-600 text-white text-xs font-black shadow-sm">
+          復習モード中
+        </span>
+      </div>
     </header>
 
     <!-- Auth Modal -->
@@ -386,6 +404,25 @@
           </div>
           <div id="my-list-container" class="overflow-y-auto flex-1 pr-2 space-y-2">
             <!-- Content loaded via JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats Modal -->
+    <div id="stats-modal" class="fixed inset-0 z-[110] hidden">
+      <div class="absolute inset-0 bg-slate-900/40" style="backdrop-filter: blur(8px);" onclick="closeStatsModal()"></div>
+      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-3xl p-4 md:p-6">
+        <div class="bg-white rounded-[28px] shadow-2xl p-6 md:p-8 relative overflow-hidden max-h-[85vh] flex flex-col gap-4">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="text-xs font-black uppercase tracking-wide text-indigo-500">Dashboard</p>
+              <h3 class="text-2xl font-black text-slate-800">成績分析</h3>
+            </div>
+            <button onclick="closeStatsModal()" class="p-2 text-slate-400 hover:text-slate-600 font-bold">×</button>
+          </div>
+          <div id="stats-content" class="space-y-4 overflow-y-auto pr-1 flex-1">
+            <div class="text-slate-400 text-sm font-bold">読み込み中...</div>
           </div>
         </div>
       </div>
@@ -522,25 +559,26 @@
   <script>
     // --- Auth Logic ---
     let currentUser = null; // { id, name }
+    let studyMode = 'normal'; // normal or review
 
-    async function checkSession() {
-      try {
-        const res = await fetch('/index.php?r=/me');
-        if (!res.ok) throw new Error('Network response was not ok');
-        const data = await res.json();
+  async function checkSession() {
+    try {
+      const res = await fetch('/index.php?r=/me');
+      if (!res.ok) throw new Error('Network response was not ok');
+      const data = await res.json();
         if (data.logged_in) {
           currentUser = data.user;
         } else {
           currentUser = null;
         }
-      } catch (e) {
-        console.error(e);
-        currentUser = null;
-      } finally {
-        updateAuthUI();
-        document.getElementById('auth-ui').classList.remove('hidden');
-      }
+    } catch (e) {
+      console.error(e);
+      currentUser = null;
+    } finally {
+      updateAuthUI();
+      document.getElementById('auth-ui').classList.remove('hidden');
     }
+  }
 
     function updateAuthUI() {
       const disp = document.getElementById('user-display');
@@ -697,6 +735,270 @@
     const btnText = document.getElementById('btn-text');
     const genWrap = document.getElementById('generated');
     const genQuestion = document.getElementById('gen-question');
+    const reviewToggle = document.getElementById('review-toggle');
+    const exitReviewBtn = document.getElementById('exit-review');
+    const reviewIndicator = document.getElementById('review-indicator');
+    const statsOpenBtn = document.getElementById('stats-open');
+    const statsModal = document.getElementById('stats-modal');
+    const statsContent = document.getElementById('stats-content');
+
+    reviewToggle?.addEventListener('click', activateReviewMode);
+    exitReviewBtn?.addEventListener('click', () => {
+      exitReviewMode();
+      genQuestion.innerHTML = '';
+      genWrap.style.display = 'none';
+      statusEl.textContent = '';
+    });
+    statsOpenBtn?.addEventListener('click', () => {
+      openStatsModal();
+    });
+
+    reviewToggle?.addEventListener('click', activateReviewMode);
+    exitReviewBtn?.addEventListener('click', () => {
+      exitReviewMode();
+      genQuestion.innerHTML = '';
+      genWrap.style.display = 'none';
+      statusEl.textContent = '';
+    });
+
+    async function refreshOverallStats() {
+      if (!statsContent) return;
+      if (!currentUser) {
+        statsContent.innerHTML = '<div class="text-sm font-bold text-slate-500">ログインすると成績分析を表示できます。</div>';
+        return;
+      }
+      statsContent.innerHTML = '<div class="text-slate-400 text-sm font-bold">読み込み中...</div>';
+      try {
+        const res = await fetch('/index.php?r=/stats');
+        const data = await res.json();
+        if (!res.ok || data.ok === false) throw new Error(data.error || 'failed');
+        const acc = data.overall?.accuracy ?? null;
+        const correct = data.overall?.correct ?? 0;
+        const total = data.overall?.total ?? 0;
+
+        const overallCard = `
+          <div class="p-4 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-between">
+            <div>
+              <p class="text-xs font-black uppercase tracking-wide text-indigo-500">Overall</p>
+              <p class="text-2xl font-black text-indigo-700">${acc ?? '--'}%</p>
+              <p class="text-xs font-bold text-slate-500">${correct}/${total} 正解</p>
+            </div>
+            <div class="text-5xl">📊</div>
+          </div>
+        `;
+
+        const sorted = (data.genres || []).slice().sort((a, b) => {
+          const aa = a.accuracy ?? 101;
+          const bb = b.accuracy ?? 101;
+          if (aa === bb) return (b.total ?? 0) - (a.total ?? 0);
+          return aa - bb;
+        });
+        const bars = sorted.length === 0
+          ? '<div class="text-sm text-slate-400 font-bold">データがありません</div>'
+          : sorted.map(g => {
+            const accVal = g.accuracy ?? 0;
+            const width = Math.min(Math.max(accVal, 0), 100);
+            const color = accVal < 40 ? '#f87171' : accVal < 70 ? '#f59e0b' : '#10b981';
+            return `
+              <div class="space-y-1">
+                <div class="flex items-center justify-between text-sm font-bold text-slate-600">
+                  <span>${g.name || '未分類'}</span>
+                  <span>${g.correct}/${g.total} (${accVal ?? '-'}%)</span>
+                </div>
+                <div class="h-2 bg-slate-200 rounded-full overflow-hidden">
+                  <div class="h-full" style="width:${width}%; background:${color};"></div>
+                </div>
+              </div>
+            `;
+          }).join('');
+
+        statsContent.innerHTML = `
+          ${overallCard}
+          <div class="space-y-3">
+            <h4 class="text-sm font-black text-slate-700">分野別 正答率（苦手順）</h4>
+            ${bars}
+          </div>
+        `;
+      } catch (e) {
+        statsContent.innerHTML = '<div class="text-xs text-rose-500 font-bold">成績分析の取得に失敗しました</div>';
+      }
+    }
+
+    function openStatsModal() {
+      if (!currentUser) {
+        alert('ログインしてから成績分析を開いてください');
+        return;
+      }
+      statsModal?.classList.remove('hidden');
+      refreshOverallStats();
+    }
+
+    function closeStatsModal() {
+      statsModal?.classList.add('hidden');
+    }
+
+    async function activateReviewMode() {
+      if (!currentUser) {
+        alert('弱点克服モードはログインが必要です');
+        return;
+      }
+      reviewToggle.disabled = true;
+      reviewToggle.textContent = '読み込み中...';
+      statusEl.textContent = '復習対象を読み込み中...';
+      statusEl.className = 'mt-4 font-bold text-slate-500';
+      try {
+        const res = await fetch('/index.php?r=/questions&scope=review');
+        const data = await res.json();
+        if (!res.ok || !Array.isArray(data)) {
+          throw new Error(data.error || '読み込みに失敗しました');
+        }
+        if (data.length === 0) {
+          exitReviewMode();
+          statusEl.textContent = '復習対象の問題はありません 🎉';
+          statusEl.className = 'mt-4 font-bold text-emerald-500';
+          return;
+        }
+        studyMode = 'review';
+        reviewIndicator.classList.remove('hidden');
+        exitReviewBtn.classList.remove('hidden');
+        renderQuestionCards(data, true);
+        genWrap.scrollIntoView({ behavior: 'smooth' });
+        statusEl.textContent = '復習モードで出題中';
+        statusEl.className = 'mt-4 font-bold text-emerald-600';
+        refreshOverallStats();
+      } catch (e) {
+        statusEl.textContent = '読み込みエラー: ' + e.message;
+        statusEl.className = 'mt-4 font-bold text-rose-500';
+      } finally {
+        reviewToggle.disabled = false;
+        reviewToggle.textContent = '弱点克服モード';
+      }
+    }
+
+    function exitReviewMode() {
+      studyMode = 'normal';
+      reviewIndicator.classList.add('hidden');
+      exitReviewBtn.classList.add('hidden');
+    }
+
+    function renderQuestionCards(list, isReview = false) {
+      if (!Array.isArray(list) || list.length === 0) {
+        genQuestion.innerHTML = '<div class="text-slate-500 font-bold">表示できる問題がありません</div>';
+        genWrap.style.display = 'block';
+        return;
+      }
+
+      genQuestion.innerHTML = list.map((q, idx) => {
+        const choices = (q.choices || []).map(c => `
+          <div class="flex items-start gap-3 p-3 rounded-xl hover:bg-indigo-50 transition-colors">
+              <span class="font-bold text-indigo-500 min-w-[24px]">${c.choice_label}.</span>
+              <span class="text-slate-700 font-medium">${c.choice_text}</span>
+          </div>
+        `).join('');
+
+        const answerBtns = (q.choices || []).map(c =>
+          `<button type="button" class="answer-btn w-12 h-12 rounded-xl text-lg font-bold border-2 border-slate-200 text-slate-500 flex items-center justify-center bg-white" data-label="${c.choice_label}">${c.choice_label}</button>`
+        ).join('');
+
+        const explanation = (q.explanation || '').toString();
+
+        return `
+                  <div class="result-card">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-4">
+                        <h3 class="font-black text-slate-800 text-lg">#${idx + 1} ${q.title || 'Question'}</h3>
+                        <div class="flex items-center gap-2 flex-wrap">
+                          ${isReview ? '<span class="text-[10px] font-black px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">復習</span>' : ''}
+                          <span class="text-xs font-bold px-3 py-1 bg-indigo-100 text-indigo-600 rounded-full w-fit">
+                              ${q.domain_name || 'General'} / ${q.topic_name || 'General'}
+                          </span>
+                        </div>
+                    </div>
+                    
+                    <div class="text-slate-600 font-bold leading-relaxed mb-6 p-4 bg-white/50 rounded-2xl border border-white">
+                        ${q.stem || ''}
+                    </div>
+                    
+                    <div class="space-y-1 mb-6">
+                        ${choices}
+                    </div>
+
+                    <div class="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100 answer-box" 
+                         data-correct="${q.correct_label || ''}" 
+                         data-qid="${q.question_id || ''}" 
+                         data-expl="${encodeURIComponent(explanation)}">
+                         
+                         <div class="flex flex-wrap items-center justify-between gap-4">
+                            <div class="flex items-center gap-3">
+                                <span class="text-sm font-bold text-indigo-400 uppercase tracking-wider">Answer</span>
+                                <div class="flex gap-2">
+                                    ${answerBtns}
+                                </div>
+                            </div>
+                            <button type="button" class="reveal-btn px-6 py-2 bg-white text-indigo-600 text-sm font-black rounded-xl shadow-sm border border-indigo-100 hover:shadow-md transition-all" data-reveal>
+                                Check Answer
+                            </button>
+                         </div>
+                         
+                         <div class="status-msg text-sm mt-3" data-status></div>
+                         <div class="answer-expl mt-4 p-4 bg-white rounded-xl text-slate-600 text-sm leading-relaxed hidden border-l-4 border-indigo-400" data-expl-area></div>
+                    </div>
+                  </div>
+                `;
+      }).join('');
+
+      document.querySelectorAll('.answer-box').forEach(box => {
+        let selected = '';
+        const status = box.querySelector('[data-status]');
+        const explArea = box.querySelector('[data-expl-area]');
+        const reveal = box.querySelector('[data-reveal]');
+        const correct = box.dataset.correct;
+        const qid = Number(box.dataset.qid);
+        const explRaw = decodeURIComponent(box.dataset.expl || '');
+
+        box.querySelectorAll('.answer-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            box.querySelectorAll('.answer-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            selected = btn.dataset.label;
+            status.textContent = `選択: ${selected}`;
+            status.className = 'status-msg text-slate-500';
+          });
+        });
+
+        reveal.addEventListener('click', () => {
+          if (!selected) {
+            status.textContent = '先に解答を選択してください 💦';
+            status.className = 'status-msg err';
+            return;
+          }
+
+          if (qid && currentUser) {
+            fetch('/index.php?r=/answers', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify([{ question_id: qid, selected_label: selected, elapsed_ms: null }])
+            }).catch(console.error);
+          }
+
+          const isCorrect = (selected === correct);
+          status.textContent = isCorrect ? `🎉 正解！ (${correct})` : `😢 残念... 正解は ${correct}`;
+          status.className = 'status-msg ' + (isCorrect ? 'ok' : 'err');
+
+          explArea.innerHTML = `<span class="font-bold block mb-1">解説:</span> ${explRaw.replace(/\\n/g, '<br>')}`;
+          explArea.classList.remove('hidden');
+        });
+      });
+
+      genWrap.style.display = 'block';
+    }
+
+    reviewToggle?.addEventListener('click', activateReviewMode);
+    exitReviewBtn?.addEventListener('click', () => {
+      exitReviewMode();
+      genQuestion.innerHTML = '';
+      genWrap.style.display = 'none';
+      statusEl.textContent = '';
+    });
 
     // UI Helper: Difficulty Chip Toggle
     window.setDiff = function (val, btn) {
@@ -830,119 +1132,9 @@
         statusEl.className = 'mt-4 font-bold text-emerald-500';
 
         // Render Questions
-        if (Array.isArray(body.questions) && body.questions.length > 0) {
-          genQuestion.innerHTML = body.questions.map((q, idx) => {
-            const choices = (q.choices || []).map(c => `
-                        <div class="flex items-start gap-3 p-3 rounded-xl hover:bg-indigo-50 transition-colors">
-                            <span class="font-bold text-indigo-500 min-w-[24px]">${c.choice_label}.</span>
-                            <span class="text-slate-700 font-medium">${c.choice_text}</span>
-                        </div>
-                    `).join('');
-
-            const answerBtns = (q.choices || []).map(c =>
-              `<button type="button" class="answer-btn w-12 h-12 rounded-xl text-lg font-bold border-2 border-slate-200 text-slate-500 flex items-center justify-center bg-white" data-label="${c.choice_label}">${c.choice_label}</button>`
-            ).join('');
-
-            const explanation = (q.explanation || '').toString();
-
-            return `
-                      <div class="result-card">
-                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-4">
-                            <h3 class="font-black text-slate-800 text-lg">#${idx + 1} ${q.title || 'Question'}</h3>
-                            <span class="text-xs font-bold px-3 py-1 bg-indigo-100 text-indigo-600 rounded-full w-fit">
-                                ${q.domain_name || 'General'} / ${q.topic_name || 'General'}
-                            </span>
-                        </div>
-                        
-                        <div class="text-slate-600 font-bold leading-relaxed mb-6 p-4 bg-white/50 rounded-2xl border border-white">
-                            ${q.stem || ''}
-                        </div>
-                        
-                        <div class="space-y-1 mb-6">
-                            ${choices}
-                        </div>
-
-                        <div class="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100 answer-box" 
-                             data-correct="${q.correct_label || ''}" 
-                             data-qid="${q.question_id || ''}" 
-                             data-expl="${encodeURIComponent(explanation)}">
-                             
-                             <div class="flex flex-wrap items-center justify-between gap-4">
-                                <div class="flex items-center gap-3">
-                                    <span class="text-sm font-bold text-indigo-400 uppercase tracking-wider">Answer</span>
-                                    <div class="flex gap-2">
-                                        ${answerBtns}
-                                    </div>
-                                </div>
-                                <button type="button" class="reveal-btn px-6 py-2 bg-white text-indigo-600 text-sm font-black rounded-xl shadow-sm border border-indigo-100 hover:shadow-md transition-all" data-reveal>
-                                    Check Answer
-                                </button>
-                             </div>
-                             
-                             <div class="status-msg text-sm mt-3" data-status></div>
-                             <div class="answer-expl mt-4 p-4 bg-white rounded-xl text-slate-600 text-sm leading-relaxed hidden border-l-4 border-indigo-400" data-expl-area></div>
-                        </div>
-                      </div>
-                    `;
-          }).join('');
-
-          // Helper: Setup interactive elements for new cards
-          document.querySelectorAll('.answer-box').forEach(box => {
-            let selected = '';
-            const status = box.querySelector('[data-status]');
-            const explArea = box.querySelector('[data-expl-area]');
-            const reveal = box.querySelector('[data-reveal]');
-            const correct = box.dataset.correct;
-            const qid = Number(box.dataset.qid);
-            const explRaw = decodeURIComponent(box.dataset.expl || '');
-
-            box.querySelectorAll('.answer-btn').forEach(btn => {
-              btn.addEventListener('click', () => {
-                box.querySelectorAll('.answer-btn').forEach(b => b.classList.remove('selected'));
-                btn.classList.add('selected');
-                selected = btn.dataset.label;
-                status.textContent = `選択: ${selected}`;
-                status.className = 'status-msg text-slate-500';
-              });
-            });
-
-            reveal.addEventListener('click', () => {
-              if (!selected) {
-                status.textContent = '先に解答を選択してください 💦';
-                status.className = 'status-msg err';
-                return;
-              }
-
-              // Async log (fire and forget)
-              if (qid) {
-                const uid = currentUser ? currentUser.id : 1; // Default to 1 (anonymous/guest)
-                fetch('/index.php?r=/answers', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify([{
-                    user_id: uid, question_id: qid, selected_label: selected, elapsed_ms: null
-                  }])
-                }).catch(console.error);
-              }
-
-              const isCorrect = (selected === correct);
-              if (isCorrect) {
-                status.textContent = `🎉 正解！ (${correct})`;
-                status.className = 'status-msg ok';
-                // Confetti effect via JS could be added here
-              } else {
-                status.textContent = `😢 残念... 正解は ${correct}`;
-                status.className = 'status-msg err';
-              }
-
-              explArea.innerHTML = `<span class="font-bold block mb-1">解説:</span> ${explRaw.replace(/\\n/g, '<br>')}`;
-              explArea.classList.remove('hidden');
-            });
-          });
-
-          genWrap.style.display = 'block';
-          genWrap.scrollIntoView({ behavior: 'smooth' });
-        }
+        renderQuestionCards(body.questions || [], false);
+        genWrap.scrollIntoView({ behavior: 'smooth' });
+        refreshOverallStats();
 
       } catch (e) {
         console.error(e);

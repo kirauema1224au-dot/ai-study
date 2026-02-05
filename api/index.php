@@ -96,6 +96,83 @@ if ($route === '/logout') {
   respond(200, ["ok" => true, "message" => "Logged out"]);
 }
 
+if ($route === '/stats' && $method === 'GET') {
+  ensureSchema($pdo);
+  $uid = requireLogin();
+
+  $stmt = $pdo->prepare("
+    SELECT
+      q.domain_name,
+      q.topic_name,
+      a.is_correct
+    FROM answers a
+    INNER JOIN (
+      SELECT question_id, MAX(answered_at) AS latest_at
+      FROM answers
+      WHERE user_id = :uid
+      GROUP BY question_id
+    ) latest ON latest.question_id = a.question_id AND latest.latest_at = a.answered_at
+    INNER JOIN questions q ON q.question_id = a.question_id
+    WHERE a.user_id = :uid
+  ");
+  $stmt->execute([':uid' => $uid]);
+  $rows = $stmt->fetchAll();
+
+  $genreStats = [];
+  $topicStats = [];
+  $total = 0;
+  $correct = 0;
+
+  foreach ($rows as $r) {
+    $total++;
+    $isCorrect = (int) $r['is_correct'] === 1;
+    if ($isCorrect) {
+      $correct++;
+    }
+
+    $genre = (string) $r['domain_name'];
+    if (!isset($genreStats[$genre])) {
+      $genreStats[$genre] = ['name' => $genre, 'correct' => 0, 'total' => 0];
+    }
+    $genreStats[$genre]['total']++;
+    if ($isCorrect) {
+      $genreStats[$genre]['correct']++;
+    }
+
+    $topic = (string) $r['topic_name'];
+    if (!isset($topicStats[$topic])) {
+      $topicStats[$topic] = ['name' => $topic, 'correct' => 0, 'total' => 0];
+    }
+    $topicStats[$topic]['total']++;
+    if ($isCorrect) {
+      $topicStats[$topic]['correct']++;
+    }
+  }
+
+  $calcAcc = fn (int $c, int $t): ?float => $t > 0 ? round(($c / $t) * 100, 1) : null;
+
+  $genreOut = array_map(function ($g) use ($calcAcc) {
+    $g['accuracy'] = $calcAcc($g['correct'], $g['total']);
+    return $g;
+  }, array_values($genreStats));
+
+  $topicOut = array_map(function ($t) use ($calcAcc) {
+    $t['accuracy'] = $calcAcc($t['correct'], $t['total']);
+    return $t;
+  }, array_values($topicStats));
+
+  respond(200, [
+    "ok" => true,
+    "overall" => [
+      "correct" => $correct,
+      "total" => $total,
+      "accuracy" => $calcAcc($correct, $total)
+    ],
+    "genres" => $genreOut,
+    "topics" => $topicOut
+  ]);
+}
+
 if ($route === '/me') {
   ensureSchema($pdo);
   if (isset($_SESSION['user_id'])) {
@@ -141,6 +218,7 @@ if ($route === '/questions' && $method === 'GET') {
   ensureSchema($pdo);
   $where = [];
   $binds = [];
+  $joins = [];
   if (isset($_GET['domain']) && $_GET['domain'] !== '') {
     $where[] = 'q.domain_name = :domain';
     $binds[':domain'] = (string) $_GET['domain'];
@@ -155,8 +233,30 @@ if ($route === '/questions' && $method === 'GET') {
     }
     $where[] = 'q.created_by = :uid';
     $binds[':uid'] = (int) $_SESSION['user_id'];
+  } elseif (isset($_GET['scope']) && $_GET['scope'] === 'review') {
+    $uid = requireLogin();
+    $latestSub = "
+      SELECT a1.question_id, a1.is_correct, a1.answered_at
+      FROM answers a1
+      WHERE a1.user_id = :uid
+        AND a1.answered_at = (
+          SELECT MAX(a2.answered_at)
+          FROM answers a2
+          WHERE a2.user_id = a1.user_id AND a2.question_id = a1.question_id
+        )
+    ";
+    $joins[] = "LEFT JOIN ({$latestSub}) latest ON latest.question_id = q.question_id";
+    $where[] = 'latest.is_correct = 0';
+    $where[] = 'q.created_by = :uid';
+    $binds[':uid'] = (int) $uid;
+  } elseif (isset($_GET['scope']) && $_GET['scope'] !== '') {
+    respond(400, ["ok" => false, "error" => "Invalid scope"]);
   }
   $whereSql = count($where) ? ('AND ' . implode(' AND ', $where)) : '';
+  $orderSql = "ORDER BY q.question_id ASC, c.choice_label ASC";
+  if (isset($_GET['scope']) && $_GET['scope'] === 'review') {
+    $orderSql = "ORDER BY latest.answered_at ASC, q.question_id ASC, c.choice_label ASC";
+  }
   $sql = "
     SELECT
       q.question_id, q.domain_name, q.topic_name, q.title, q.stem, q.correct_label, q.explanation,
@@ -169,9 +269,10 @@ if ($route === '/questions' && $method === 'GET') {
       FROM answers
       GROUP BY question_id
     ) stats ON stats.question_id = q.question_id
+    " . implode("\n    ", $joins) . "
     WHERE q.is_active = 1
     {$whereSql}
-    ORDER BY q.question_id ASC, c.choice_label ASC
+    {$orderSql}
   ";
   $stmt = $pdo->prepare($sql);
   $stmt->execute($binds);
@@ -235,6 +336,7 @@ if ($route === '/questions' && $method === 'POST') {
 
 if ($route === '/answers' && $method === 'POST') {
   ensureSchema($pdo);
+  $uid = requireLogin();
 
   $raw = file_get_contents('php://input');
   if ($raw === false) {
@@ -285,7 +387,7 @@ if ($route === '/answers' && $method === 'POST') {
       $elapsed = array_key_exists('elapsed_ms', $a) ? (is_null($a['elapsed_ms']) ? null : (int) $a['elapsed_ms']) : null;
 
       $stmtAnswer->execute([
-        ':user_id' => (int) $a['user_id'],
+        ':user_id' => $uid,
         ':question_id' => $qid,
         ':selected_label' => $selected,
         ':is_correct' => $isCorrect,
@@ -482,7 +584,7 @@ function validateChoice(mixed $c, int $qid, int $qIdx, int $cIdx): void
 
 function validateAnswer(mixed $a, int $idx): void
 {
-  $required = ['user_id', 'question_id', 'selected_label'];
+  $required = ['question_id', 'selected_label'];
   if (!is_array($a)) {
     respond(400, ["ok" => false, "error" => "Answer at index {$idx} must be object"]);
   }
@@ -800,6 +902,14 @@ function validateGeneratedQuestions(array $qs): array
     throw new RuntimeException("Generated questions did not pass quality checks (empty/duplicate/too short).");
   }
   return $out;
+}
+
+function requireLogin(): int
+{
+  if (!isset($_SESSION['user_id'])) {
+    respond(401, ["ok" => false, "error" => "Login required"]);
+  }
+  return (int) $_SESSION['user_id'];
 }
 
 function respond(int $status, array $body): void

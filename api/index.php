@@ -114,6 +114,7 @@ if ($route === '/stats' && $method === 'GET') {
     ) latest ON latest.question_id = a.question_id AND latest.latest_at = a.answered_at
     INNER JOIN questions q ON q.question_id = a.question_id
     WHERE a.user_id = :uid
+      AND q.created_by = :uid
   ");
   $stmt->execute([':uid' => $uid]);
   $rows = $stmt->fetchAll();

@@ -741,6 +741,7 @@
     const statsOpenBtn = document.getElementById('stats-open');
     const statsModal = document.getElementById('stats-modal');
     const statsContent = document.getElementById('stats-content');
+    const QUESTIONS_ENDPOINT = '/index.php?r=/questions&scope=my'; // 自作のみ取得
 
     reviewToggle?.addEventListener('click', activateReviewMode);
     exitReviewBtn?.addEventListener('click', () => {

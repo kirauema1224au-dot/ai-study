@@ -219,19 +219,7 @@
                 <p id="topic-hint" class="text-[10px] text-slate-400 mt-2 ml-2 hidden">※資格名を選ぶと表示されます</p>
               </div>
 
-              <!-- Difficulty -->
-              <div class="group rounded-[2rem] border-2 border-dashed border-indigo-200 bg-white/30 p-6">
-                <label class="mb-4 block text-xs font-black uppercase text-indigo-500">4. 難易度</label>
-                <div class="flex gap-3">
-                  <button type="button" onclick="setDiff('1', this)"
-                    class="diff-chip flex-1 rounded-xl border border-transparent bg-white px-2 py-3 text-xs font-black text-slate-400 transition-all hover:border-indigo-100 hover:text-indigo-600">ビギナー</button>
-                  <button type="button" onclick="setDiff('3', this)"
-                    class="diff-chip flex-1 rounded-xl bg-indigo-600 px-2 py-3 text-xs font-black text-white shadow-md active">ミドル</button>
-                  <button type="button" onclick="setDiff('5', this)"
-                    class="diff-chip flex-1 rounded-xl border border-transparent bg-white px-2 py-3 text-xs font-black text-slate-400 transition-all hover:border-indigo-100 hover:text-indigo-600">エキスパート</button>
-                </div>
-                <input type="hidden" id="difficulty" value="3">
-              </div>
+
             </div>
           </div>
 
@@ -396,22 +384,13 @@
     const countRange = document.getElementById('count-range');
     const countDisplay = document.getElementById('count-display');
     const countInput = document.getElementById('count');
-    const difficultyInput = document.getElementById('difficulty');
 
     countRange.addEventListener('input', () => {
       countDisplay.textContent = countRange.value;
       countInput.value = countRange.value;
     });
 
-    window.setDiff = (val, btn) => {
-      difficultyInput.value = val;
-      document.querySelectorAll('.diff-chip').forEach(b => {
-        b.classList.remove('bg-indigo-600', 'text-white', 'shadow-md', 'active');
-        b.classList.add('bg-white', 'text-slate-400');
-      });
-      btn.classList.remove('bg-white', 'text-slate-400');
-      btn.classList.add('bg-indigo-600', 'text-white', 'shadow-md', 'active');
-    };
+
 
     // --- State ---
     let currentUser = null;
@@ -710,7 +689,7 @@
           problem_type: document.getElementById('topic').value || '', // Map Topic to Problem Type
           background: '',
           output_format: DEFAULT_OUTPUT_FORMAT,
-          constraints: `試験名:${document.getElementById('exam').value}, 難易度:${document.getElementById('difficulty').value || '3'}`,
+          constraints: `試験名:${document.getElementById('exam').value}`,
           notes: '',
           count: parseInt(document.getElementById('count').value, 10) || 4
         };

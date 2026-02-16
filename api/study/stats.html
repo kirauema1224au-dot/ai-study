@@ -4,19 +4,24 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>成績分析</title>
+  <title>成績分析 | STUDY LAUNCHER</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap"
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800;900&display=swap"
     rel="stylesheet">
   <style type="text/tailwindcss">
     :root {
+      --primary: #6366f1;
+      --secondary: #ec4899;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
       --bg-gradient: linear-gradient(135deg, #fef9c3 0%, #d8b4fe 50%, #818cf8 100%);
     }
 
     body {
-      @apply min-h-screen flex items-center justify-center p-4 md:p-6 text-slate-800;
+      @apply min-h-screen flex items-center justify-center p-4 md:p-6 text-slate-800 overflow-x-hidden;
       font-family: "M PLUS Rounded 1c", sans-serif;
       background: var(--bg-gradient);
       background-size: 400% 400%;
@@ -29,94 +34,158 @@
       100% { background-position: 0% 50%; }
     }
 
-    .main-card {
-      @apply rounded-[48px] border border-white/40 max-w-6xl w-full p-8 md:p-16 relative overflow-hidden;
-      background: rgba(255, 255, 255, 0.6);
-      -webkit-backdrop-filter: blur(20px);
-      backdrop-filter: blur(20px);
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1), inset 0 0 20px rgba(255, 255, 255, 0.5);
+    /* Shell Components */
+    .glass-container {
+      @apply w-full max-w-[1100px] flex flex-col overflow-hidden rounded-[3rem] border border-white/40 bg-white/60 shadow-2xl;
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+      min-height: 80vh;
+    }
+
+    .nav-link {
+      @apply relative px-4 py-2 font-black text-slate-500 transition-all hover:text-indigo-600;
+    }
+
+    .nav-link.active {
+      @apply text-indigo-600;
+    }
+
+    .nav-link.active::after {
+      content: '';
+      @apply absolute bottom-[-5px] left-1/2 h-1 w-6 -translate-x-1/2 rounded-full bg-indigo-600;
+    }
+
+    /* Stats Components */
+    .stat-progress-bg {
+      @apply h-3.5 overflow-hidden rounded-full bg-slate-100;
+    }
+
+    .stat-progress-fill {
+      @apply h-full rounded-full transition-all duration-1000 ease-out;
+    }
+    
+    @keyframes pageIn {
+        from { opacity: 0; transform: translateY(20px) scale(0.98); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
     }
   </style>
 </head>
 
 <body>
-  <main class="main-card">
-    <div class="absolute -top-20 -right-20 w-df h-96 bg-emerald-300/20 rounded-full blur-3xl pointer-events-none"></div>
-    <div class="absolute -bottom-20 -left-20 w-96 h-96 bg-teal-300/20 rounded-full blur-3xl pointer-events-none"></div>
 
-    <header class="flex flex-wrap items-center justify-between gap-3 relative z-10">
-      <div>
-        <p
-          class="inline-block rounded-full bg-white/50 border border-white/60 px-4 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-emerald-600 shadow-sm backdrop-blur-md">
-          Stats Dashboard
-        </p>
-        <h1 class="mt-4 text-3xl md:text-5xl font-black tracking-tight text-slate-800">成績分析</h1>
-        <p class="mt-3 text-sm font-bold text-slate-500">あなたの学習データを可視化します。</p>
-      </div>
-      <div class="flex flex-wrap gap-3">
-        <a href="/study/index.html"
-          class="inline-flex items-center rounded-2xl border border-white/60 bg-white/40 px-5 py-3 text-sm font-black text-slate-700 shadow-sm backdrop-blur-md transition hover:bg-white hover:text-indigo-600 hover:shadow-md hover:-translate-y-0.5">
-          ホーム
-        </a>
-        <a href="/study/review.html"
-          class="inline-flex items-center rounded-2xl bg-gradient-to-r from-rose-400 to-rose-500 px-5 py-3 text-sm font-black text-white shadow-lg shadow-rose-200 transition hover:scale-105 active:scale-95">
-          🔥 弱点克服へ
-        </a>
-      </div>
-    </header>
-
-    <div class="mt-10 flex flex-wrap items-center gap-3 relative z-10">
-      <span id="user-name"
-        class="hidden rounded-full bg-emerald-100/80 px-4 py-1.5 text-sm font-black text-emerald-700 border border-emerald-200"></span>
-      <button id="open-auth"
-        class="inline-flex items-center rounded-xl bg-emerald-500 px-6 py-3 text-sm font-black text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-600 hover:-translate-y-0.5">
-        ログインして分析
-      </button>
-      <button id="refresh"
-        class="hidden inline-flex items-center rounded-xl border-2 border-emerald-100 bg-white/50 px-4 py-2 text-sm font-black text-emerald-600 transition hover:bg-emerald-50 hover:border-emerald-300">
-        🔄 最新化
-      </button>
-    </div>
-
-    <div id="status" class="mt-6 text-sm font-bold text-slate-400 animate-pulse relative z-10">読み込み中...</div>
-
-    <section id="dashboard" class="mt-8 hidden space-y-6 relative z-10">
-      <div id="overall-card"
-        class="rounded-[32px] border border-white/60 bg-gradient-to-br from-emerald-50/80 to-teal-50/80 p-8 shadow-sm backdrop-blur-md relative overflow-hidden group">
+  <div class="glass-container">
+    <!-- Navigation Bar -->
+    <nav class="flex items-center justify-between border-b border-white/20 bg-white/30 px-6 py-4 md:px-8 md:py-6">
+      <div class="flex items-center gap-3">
         <div
-          class="absolute top-0 right-0 w-32 h-32 bg-emerald-200/20 rounded-full blur-2xl transition-all group-hover:scale-150">
+          class="flex h-11 w-11 rotate-3 items-center justify-center rounded-2xl bg-indigo-600 text-2xl text-white shadow-lg">
+          🚀
         </div>
+        <h1 class="hidden text-2xl font-black tracking-tighter text-slate-800 md:block">STUDY LAUNCHER</h1>
+        <h1 class="block text-xl font-black tracking-tighter text-slate-800 md:hidden">STUDY</h1>
       </div>
-      <div id="genre-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-    </section>
-    </section>
-  </main>
 
+      <div class="hidden items-center gap-4 md:flex">
+        <a href="/study/index.html" class="nav-link">ホーム</a>
+        <a href="/study/requirements.html" class="nav-link">AI生成</a>
+        <a href="/study/stats.html" class="nav-link active">成績分析</a>
+        <a href="/study/review.html" class="nav-link">弱点克服</a>
+      </div>
+
+      <div class="flex items-center gap-4">
+        <!-- Logged In State -->
+        <div id="user-box" class="hidden items-center gap-3">
+          <div class="hidden text-right sm:block">
+            <p class="text-[10px] font-black uppercase leading-none text-slate-400">Welcome</p>
+            <p id="user-name" class="mt-1 text-xs font-bold leading-none text-slate-600">User</p>
+          </div>
+          <div
+            class="h-10 w-10 overflow-hidden rounded-full border-2 border-white bg-indigo-100 shadow-sm relative group cursor-pointer"
+            id="logout-btn" title="ログアウト">
+            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="avatar">
+            <div
+              class="absolute inset-0 bg-black/30 hidden group-hover:flex items-center justify-center text-[10px] text-white font-bold">
+              OUT</div>
+          </div>
+        </div>
+        <!-- Logged Out State -->
+        <button id="login-btn"
+          class="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-black text-white shadow transition hover:bg-indigo-700">
+          ログイン
+        </button>
+      </div>
+    </nav>
+
+    <!-- Content Area -->
+    <main class="flex-grow p-4 md:p-8">
+      <div id="p-stats" class="active block animate-[pageIn_0.5s_ease-out]">
+        <div class="mb-10 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 class="text-3xl font-black tracking-tight text-slate-800">成績分析レポート</h2>
+            <p class="text-sm font-medium text-slate-500">現在のスキルバランスを確認しましょう。</p>
+          </div>
+          <button id="refresh"
+            class="hidden rounded-full border border-slate-200 bg-white px-5 py-2 text-xs font-black text-slate-600 shadow-sm transition hover:bg-slate-50">
+            🔄 最新データ更新
+          </button>
+        </div>
+
+        <div id="status" class="mt-4 text-sm font-bold text-slate-500">読み込み中...</div>
+
+        <section id="dashboard" class="hidden space-y-10">
+          <!-- Main Score Card -->
+          <div id="overall-card"
+            class="relative mb-10 overflow-hidden rounded-[3rem] bg-indigo-600 p-8 text-white shadow-2xl shadow-indigo-200 md:p-12">
+            <!-- JS will inject content here -->
+          </div>
+
+          <!-- Category Breakdown -->
+          <div id="genre-list" class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <!-- JS will inject content here -->
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <!-- Footer Status Bar -->
+    <footer class="flex items-center justify-between border-t border-white/20 bg-white/20 px-6 py-4 md:px-8">
+      <div class="flex gap-4">
+        <span class="text-[10px] font-black uppercase tracking-widest text-indigo-500">System Status: Optimal</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="h-2 w-2 animate-pulse rounded-full bg-emerald-500"></span>
+        <span class="text-[10px] font-black uppercase text-slate-400">AI Connected</span>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Auth Modal (Identical to index.html) -->
   <div id="auth-modal" class="fixed inset-0 z-50 hidden">
     <div class="absolute inset-0 bg-slate-900/45 backdrop-blur-sm"></div>
     <div class="absolute left-1/2 top-1/2 w-full max-w-md -translate-x-1/2 -translate-y-1/2 p-4">
-      <div class="rounded-3xl bg-white p-6 shadow-2xl">
-        <h2 class="text-xl font-black text-slate-800">ログイン</h2>
-        <p class="mt-1 text-xs font-bold text-slate-500">成績分析にはログインが必要です。</p>
-        <form id="auth-form" class="mt-5 space-y-3">
+      <div class="rounded-[2rem] bg-white p-8 shadow-2xl">
+        <h2 class="text-2xl font-black text-slate-800">ログイン / 登録</h2>
+        <p class="mt-2 text-xs font-bold text-slate-500">ログインして成績を確認しましょう。</p>
+        <form id="auth-form" class="mt-6 space-y-4">
           <input id="auth-user" type="text" required placeholder="ユーザー名"
-            class="w-full rounded-xl border border-slate-200 px-3 py-2 font-bold text-slate-700 outline-none focus:border-emerald-400">
+            class="w-full rounded-xl border-2 border-slate-100 bg-slate-50 px-4 py-3 font-bold text-slate-700 outline-none transition focus:border-indigo-400 focus:bg-white">
           <input id="auth-pass" type="password" required placeholder="パスワード"
-            class="w-full rounded-xl border border-slate-200 px-3 py-2 font-bold text-slate-700 outline-none focus:border-emerald-400">
-          <div class="flex gap-2">
+            class="w-full rounded-xl border-2 border-slate-100 bg-slate-50 px-4 py-3 font-bold text-slate-700 outline-none transition focus:border-indigo-400 focus:bg-white">
+          <div class="flex gap-3 pt-2">
             <button type="submit" name="action" value="login"
-              class="flex-1 rounded-xl bg-emerald-600 py-2 text-sm font-black text-white hover:bg-emerald-700">
+              class="flex-1 rounded-xl bg-indigo-600 py-3 text-sm font-black text-white transition hover:bg-indigo-700 hover:shadow-lg">
               ログイン
             </button>
             <button type="submit" name="action" value="register"
-              class="flex-1 rounded-xl bg-slate-100 py-2 text-sm font-black text-slate-700 hover:bg-slate-200">
+              class="flex-1 rounded-xl bg-slate-100 py-3 text-sm font-black text-slate-600 transition hover:bg-slate-200">
               新規登録
             </button>
           </div>
         </form>
-        <div id="auth-msg" class="mt-3 min-h-[1.25rem] text-xs font-bold text-rose-500"></div>
+        <div id="auth-msg" class="mt-4 min-h-[1.25rem] text-center text-xs font-bold text-rose-500"></div>
         <button id="close-auth"
-          class="mt-2 inline-flex rounded-lg border border-slate-200 px-3 py-1 text-xs font-black text-slate-500 hover:bg-slate-50">
+          class="mt-2 w-full rounded-lg border border-slate-200 py-2 text-xs font-black text-slate-400 hover:bg-slate-50">
           閉じる
         </button>
       </div>
@@ -129,7 +198,9 @@
     const overallEl = document.getElementById('overall-card');
     const genreListEl = document.getElementById('genre-list');
     const userNameEl = document.getElementById('user-name');
-    const openAuthBtn = document.getElementById('open-auth');
+    const userBox = document.getElementById('user-box');
+    const loginBtn = document.getElementById('login-btn');
+    const logoutBtn = document.getElementById('logout-btn');
     const refreshBtn = document.getElementById('refresh');
     const authModal = document.getElementById('auth-modal');
     const closeAuthBtn = document.getElementById('close-auth');
@@ -151,13 +222,15 @@
 
     const updateHeader = () => {
       if (currentUser) {
-        userNameEl.textContent = `ログイン中: ${currentUser.name}`;
-        userNameEl.classList.remove('hidden');
-        openAuthBtn.classList.add('hidden');
+        userNameEl.textContent = currentUser.name;
+        userBox.classList.remove('hidden');
+        userBox.classList.add('flex');
+        loginBtn.classList.add('hidden');
         refreshBtn.classList.remove('hidden');
       } else {
-        userNameEl.classList.add('hidden');
-        openAuthBtn.classList.remove('hidden');
+        userBox.classList.add('hidden');
+        userBox.classList.remove('flex');
+        loginBtn.classList.remove('hidden');
         refreshBtn.classList.add('hidden');
       }
     };
@@ -169,33 +242,53 @@
       const total = overall.total ?? 0;
 
       overallEl.innerHTML = `
-        <p class="text-xs font-black uppercase tracking-wider text-emerald-700">Overall Accuracy</p>
-        <p class="mt-2 text-4xl font-black text-emerald-800">${acc}%</p>
-        <p class="mt-1 text-sm font-bold text-slate-600">${correct}/${total} 正解</p>
+        <div class="relative z-10 flex flex-col md:flex-row items-center gap-8">
+            <div class="flex-shrink-0 w-32 h-32 bg-white/20 rounded-[2.5rem] flex items-center justify-center text-4xl font-black border-4 border-white/30 backdrop-blur-md">
+                ${acc}<span class="text-xl ml-1">%</span>
+            </div>
+            <div class="flex-grow text-center md:text-left">
+                <p class="text-indigo-200 text-xs font-black uppercase tracking-widest mb-1">Overall Accuracy</p>
+                <h3 class="text-2xl font-black mb-4">総合正答率</h3>
+                <div class="stat-progress-bg bg-white/20">
+                    <div class="stat-progress-fill bg-white shadow-[0_0_15px_rgba(255,255,255,0.5)]"
+                        style="width: ${Math.max(0, Math.min(100, acc))}%"></div>
+                </div>
+                <div class="flex justify-between mt-3 text-xs font-bold text-indigo-100 px-1">
+                    <span>現在の正解数: ${correct}問</span>
+                    <span>合計回答数: ${total}問</span>
+                </div>
+            </div>
+        </div>
+        <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-white/10 rounded-full blur-3xl"></div>
       `;
 
       const genres = (data.genres || []).slice().sort((a, b) => (a.accuracy ?? 101) - (b.accuracy ?? 101));
+
       if (genres.length === 0) {
-        genreListEl.innerHTML = '<div class="rounded-xl border border-slate-200 bg-white/75 p-4 text-sm font-bold text-slate-500">分析データがありません。</div>';
+        genreListEl.innerHTML = '<div class="col-span-full rounded-[2rem] border border-slate-200 bg-white/40 p-8 text-center text-sm font-bold text-slate-500">分析データがありません。問題を解いてみましょう！</div>';
         return;
       }
 
       genreListEl.innerHTML = genres.map((g) => {
         const accVal = g.accuracy ?? 0;
         const width = Math.max(0, Math.min(100, accVal));
-        const color = accVal < 40 ? '#f87171' : accVal < 70 ? '#f59e0b' : '#10b981';
+        const colorClass = accVal < 40 ? 'bg-rose-400' : accVal < 70 ? 'bg-amber-400' : 'bg-emerald-400';
+        const badgeColor = accVal < 40 ? 'bg-rose-100 text-rose-500' : accVal < 70 ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600';
+        const badgeText = accVal < 40 ? '要復習' : accVal < 70 ? '標準' : '安定';
         const name = (g.name || '未分類').toString();
+
         return `
           <button type="button" data-domain="${encodeURIComponent(name)}"
-            class="w-full rounded-xl border border-slate-200 bg-white/80 p-4 text-left transition hover:bg-emerald-50/70 hover:border-emerald-300">
-            <div class="mb-2 flex items-center justify-between text-sm font-black text-slate-700">
-              <span>${name}</span>
-              <span>${g.correct}/${g.total} (${accVal}%)</span>
+            class="group bg-white/40 p-6 rounded-[2rem] border border-white/50 text-left transition-all hover:-translate-y-1 hover:bg-white/60 hover:shadow-lg">
+            <div class="flex justify-between items-center mb-4">
+                <span class="text-sm font-black text-slate-700">${name}</span>
+                <span class="px-3 py-1 ${badgeColor} rounded-lg text-[10px] font-black">${badgeText}</span>
             </div>
-            <div class="h-2 rounded-full bg-slate-200">
-              <div class="h-2 rounded-full" style="width:${width}%; background:${color};"></div>
+            <div class="text-2xl font-black text-slate-800 mb-2">${accVal}%</div>
+            <div class="stat-progress-bg">
+                <div class="stat-progress-fill ${colorClass}" style="width: ${width}%"></div>
             </div>
-            <p class="mt-2 text-[11px] font-black text-emerald-700">クリックして弱点克服で解く</p>
+            <p class="text-[10px] text-slate-400 mt-3 font-bold group-hover:text-indigo-500 transition-colors">${g.correct} / ${g.total} 正解 - クリックで復習</p>
           </button>
         `;
       }).join('');
@@ -214,6 +307,7 @@
       if (!currentUser) {
         dashboardEl.classList.add('hidden');
         setStatus('ログインすると成績分析を利用できます。');
+        // Show login modal slightly delayed if not logged in? Or just wait for user action.
         return;
       }
       setStatus('成績を取得中...');
@@ -221,14 +315,16 @@
         const res = await fetch('/index.php?r=/stats');
         const data = await res.json();
         if (!res.ok || data.ok === false) {
-          throw new Error(data.error || 'failed');
+          throw new Error(data.error || 'stats failed');
         }
         renderStats(data);
         dashboardEl.classList.remove('hidden');
-        setStatus('最新の成績を表示しました。', 'text-emerald-700');
+        setStatus(''); // Clear fetching message on success
+        statusEl.classList.add('hidden');
       } catch (e) {
         dashboardEl.classList.add('hidden');
         setStatus(`取得に失敗しました: ${e.message}`, 'text-rose-500');
+        statusEl.classList.remove('hidden');
       }
     };
 
@@ -280,13 +376,23 @@
 
         closeAuthModal();
         updateHeader();
-        await loadStats();
+        await loadStats(); // Reload stats after login
       } catch (err) {
         authMsgEl.textContent = err.message;
       }
     });
 
-    openAuthBtn.addEventListener('click', openAuthModal);
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', async () => {
+        if (!confirm('ログアウトしますか？')) return;
+        await fetch('/index.php?r=/logout');
+        currentUser = null;
+        updateHeader();
+        loadStats(); // Reload (clear) stats
+      });
+    }
+
+    loginBtn.addEventListener('click', openAuthModal);
     closeAuthBtn.addEventListener('click', closeAuthModal);
     refreshBtn.addEventListener('click', loadStats);
 

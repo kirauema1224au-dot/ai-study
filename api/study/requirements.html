@@ -1,24 +1,27 @@
-﻿<!DOCTYPE html>
+﻿<!doctype html>
 <html lang="ja">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>学習要件の整理 - Next-Gen Pop Edition</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>AI問題生成 | STUDY LAUNCHER</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap"
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800;900&display=swap"
     rel="stylesheet">
   <style type="text/tailwindcss">
     :root {
       --primary: #6366f1;
       --secondary: #ec4899;
-      --accent: #f59e0b;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
       --bg-gradient: linear-gradient(135deg, #fef9c3 0%, #d8b4fe 50%, #818cf8 100%);
-      --muted: #64748b;
     }
 
     body {
-      @apply min-h-screen flex items-start justify-center p-4 md:p-6 text-slate-800;
+      @apply min-h-screen flex items-center justify-center p-4 md:p-6 text-slate-800 overflow-x-hidden;
       font-family: "M PLUS Rounded 1c", sans-serif;
       background: var(--bg-gradient);
       background-size: 400% 400%;
@@ -26,1442 +29,690 @@
     }
 
     @keyframes gradientBG {
-      0% {
-        background-position: 0% 50%;
-      }
-
-      50% {
-        background-position: 100% 50%;
-      }
-
-      100% {
-        background-position: 0% 50%;
-      }
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
     }
 
-    .main-card {
-      @apply rounded-[48px] border border-white/40;
-      background: rgba(255, 255, 255, 0.6);
-      -webkit-backdrop-filter: blur(20px);
-      backdrop-filter: blur(20px);
-      box-shadow:
-        0 25px 50px -12px rgba(0, 0, 0, 0.1),
-        inset 0 0 20px rgba(255, 255, 255, 0.5);
+    /* Shell Components - Strictly synced with dezain */
+    .glass-container {
+      @apply w-full max-w-[1100px] flex flex-col overflow-hidden rounded-[3rem] border border-white/40 bg-white/60 shadow-2xl;
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+      height: 90vh; /* Fixed height to allow internal scrolling */
     }
 
-    .input-group {
-      @apply relative rounded-[24px] p-3 border-2 border-transparent;
-      background: rgba(255, 255, 255, 0.4);
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      /* For suggest positioning */
+    .nav-link {
+      @apply relative px-4 py-2 font-black text-slate-500 transition-all hover:text-indigo-600;
     }
 
-    /* Suggestion Box Styles tailored for Tailwind/Rounded UI */
-    .suggest {
-      @apply absolute left-0 right-0 z-50 max-h-[240px] overflow-y-auto hidden p-2 select-none rounded-[20px] border border-indigo-500/20;
-      top: calc(100% + 8px);
-      background: rgba(255, 255, 255, 0.95);
-      -webkit-backdrop-filter: blur(12px);
-      backdrop-filter: blur(12px);
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    .nav-link.active {
+      @apply text-indigo-600;
     }
 
-    .suggest.visible {
-      @apply block;
-      animation: slideDown 0.2s ease-out;
-    }
-
-    @keyframes slideDown {
-      from {
-        opacity: 0;
-        transform: translateY(-10px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .suggest button {
-      @apply block w-full text-left bg-transparent text-slate-700 py-[10px] px-4 font-bold text-[0.9rem] cursor-pointer rounded-xl select-none;
-      border: 0;
-      font-family: inherit;
-      transition: all 0.2s;
-    }
-
-    .suggest button:hover,
-    .suggest button:focus {
-      @apply bg-indigo-100 text-indigo-700;
-    }
-
-    .input-group:focus-within {
-      @apply bg-white border-indigo-500 z-10;
-      transform: scale(1.02);
-      box-shadow: 0 10px 20px -10px rgba(99, 102, 241, 0.3);
-      /* Bring to front when focused so suggest shows over others */
-    }
-
-    .field-label {
-      @apply flex items-center gap-2 font-extrabold text-slate-600 mb-2 text-[0.9rem];
-    }
-
-    input,
-    select,
-    textarea {
-      @apply bg-transparent w-full text-slate-800 font-bold;
-      border: none;
-      outline: none;
-    }
-
-    input::placeholder,
-    textarea::placeholder {
-      @apply text-slate-400 font-normal;
-    }
-
-    /* Challenge Level Chips */
-    .chip-group button {
-      @apply rounded-2xl font-extrabold text-[0.8rem];
-      transition: all 0.2s;
-    }
-
-    .chip-active {
-      background: white !important;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      color: var(--primary) !important;
-      transform: translateY(-2px);
-    }
-
-    /* Premium Button */
-    .generate-btn {
-      @apply relative z-[1] overflow-hidden;
-      background: linear-gradient(135deg, #6366f1 0%, #ec4899 100%);
-      transition: all 0.4s;
-    }
-
-    .generate-btn::before {
+    .nav-link.active::after {
       content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(135deg, #ec4899 0%, #6366f1 100%);
-      opacity: 0;
-      z-index: -1;
-      transition: opacity 0.4s;
+      @apply absolute bottom-[-5px] left-1/2 h-1 w-6 -translate-x-1/2 rounded-full bg-indigo-600;
     }
 
-    .generate-btn:hover::before {
-      opacity: 1;
+    /* Form Components */
+    .input-pill {
+      @apply w-full rounded-[1.25rem] border-2 border-transparent bg-white/50 px-5 py-4 font-bold transition-all duration-300;
     }
 
-    .generate-btn:hover {
-      transform: translateY(-4px) scale(1.02);
-      box-shadow: 0 20px 40px -10px rgba(236, 72, 153, 0.5);
+    .input-pill:focus {
+      @apply outline-none border-indigo-500 bg-white shadow-lg shadow-indigo-500/20;
+    }
+    
+    .input-pill::placeholder {
+        @apply text-slate-400 font-normal;
     }
 
-    .generate-btn:active {
-      transform: translateY(0);
+    .btn-premium {
+      @apply bg-gradient-to-br from-indigo-500 to-pink-500 shadow-lg shadow-indigo-500/40 transition-all hover:-translate-y-0.5 hover:shadow-indigo-500/50;
     }
 
-    /* Float Animation */
-    .float-emoji {
-      @apply absolute pointer-events-none z-0;
-      filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.1));
-      animation: float 6s ease-in-out infinite;
+    /* Suggestions */
+    .suggest {
+      @apply absolute left-0 right-0 z-50 mt-2 hidden max-h-[240px] overflow-y-auto rounded-3xl border border-white/50 bg-white/90 p-2 shadow-2xl backdrop-blur-xl;
+    }
+    .suggest button {
+      @apply block w-full cursor-pointer rounded-xl px-4 py-3 text-left text-sm font-bold text-slate-600 transition-colors hover:bg-indigo-50 hover:text-indigo-600;
     }
 
-    @keyframes float {
-
-      0%,
-      100% {
-        transform: translateY(0) rotate(0deg);
-      }
-
-      50% {
-        transform: translateY(-20px) rotate(10deg);
-      }
+    /* Chip UI Components */
+    .chip-grid {
+      @apply flex flex-wrap gap-2;
     }
 
-    /* Result Card Styles tailored */
+    .chip-btn {
+      @apply rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-500 transition-all hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600 shadow-sm text-left;
+    }
+
+    .chip-btn.active {
+      @apply bg-indigo-600 text-white border-indigo-600 shadow-md ring-2 ring-indigo-200 ring-offset-1;
+    }
+
+    /* Result Card */
     .result-card {
-      @apply rounded-[32px] p-6 mb-6 border border-white/60;
-      background: rgba(255, 255, 255, 0.85);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-      transition: transform 0.2s;
+      @apply mb-6 rounded-[2.5rem] border border-white/60 bg-white/40 p-6 shadow-sm transition-all hover:bg-white/60 md:p-8;
     }
-
-    .result-card:hover {
-      transform: translateY(-2px);
-    }
-
+    
     .answer-btn {
-      transition: all 0.2s;
+      @apply flex items-center justify-center rounded-xl border-2 border-transparent bg-white text-lg font-bold text-slate-500 shadow-sm transition-all duration-200 hover:border-indigo-100 hover:text-indigo-600;
     }
-
-    .answer-btn:hover {
-      @apply bg-indigo-100 border-indigo-500 text-indigo-700;
-    }
-
     .answer-btn.selected {
-      @apply bg-indigo-500 text-white border-indigo-500;
-      transform: scale(1.05);
-      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+      @apply border-indigo-500 bg-indigo-500 text-white shadow-lg shadow-indigo-500/30;
     }
 
-    .status-msg {
-      @apply font-bold mt-2;
+    @keyframes pageIn {
+      from { opacity: 0; transform: translateY(20px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
     }
-
-    .status-msg.ok {
-      @apply text-emerald-500;
+    
+    /* Custom Scrollbar from dezain */
+    ::-webkit-scrollbar {
+        width: 8px;
     }
-
-    .status-msg.err {
-      @apply text-red-500;
+    ::-webkit-scrollbar-track {
+        background: transparent;
     }
-
-    .one-click-row {
-      @apply flex flex-wrap gap-2 mt-2;
+    ::-webkit-scrollbar-thumb {
+        background: rgba(0, 0, 0, 0.1);
+        border-radius: 10px;
     }
-
-    .one-click-chip {
-      @apply px-3 py-2 rounded-xl border-2 border-indigo-100 bg-white/70 text-slate-700 text-sm font-bold transition-all;
-    }
-
-    .one-click-chip:hover {
-      @apply bg-indigo-50 border-indigo-300 text-indigo-700;
-      transform: translateY(-1px);
-    }
-
-    .one-click-chip.active {
-      @apply bg-indigo-600 border-indigo-600 text-white shadow;
-    }
-
-    /* Custom Scrollbar */
-    textarea::-webkit-scrollbar {
-      width: 6px;
-    }
-
-    textarea::-webkit-scrollbar-thumb {
-      background: #cbd5e1;
-      border-radius: 10px;
+    ::-webkit-scrollbar-thumb:hover {
+        background: rgba(0, 0, 0, 0.2);
     }
   </style>
 </head>
 
 <body>
 
-  <!-- 装飾用絵文字 -->
-  <div class="float-emoji text-5xl top-[10%] left-[5%] opacity-40">📝</div>
-  <div class="float-emoji text-6xl bottom-[15%] right-[5%] opacity-40" style="animation-delay: -2s;">💡</div>
-  <div class="float-emoji text-4xl top-[20%] right-[10%] opacity-40" style="animation-delay: -4s;">✨</div>
+  <div class="glass-container">
+    <!-- Navigation Bar -->
+    <nav
+      class="flex items-center justify-between border-b border-white/20 bg-white/30 px-6 py-4 md:px-8 md:py-6 shrink-0">
+      <div class="flex items-center gap-3">
+        <div
+          class="flex h-11 w-11 rotate-3 items-center justify-center rounded-2xl bg-indigo-600 text-2xl text-white shadow-lg">
+          🚀
+        </div>
+        <h1 class="hidden text-2xl font-black tracking-tighter text-slate-800 md:block">STUDY LAUNCHER</h1>
+        <h1 class="block text-xl font-black tracking-tighter text-slate-800 md:hidden">STUDY</h1>
+      </div>
 
-  <div class="main-card max-w-5xl w-full p-5 md:p-10 relative z-10 my-4">
+      <div class="hidden items-center gap-4 md:flex">
+        <a href="/study/index.html" class="nav-link">ホーム</a>
+        <a href="/study/requirements.html" class="nav-link active">AI生成</a>
+        <a href="/study/stats.html" class="nav-link">成績分析</a>
+        <a href="/study/review.html" class="nav-link">弱点克服</a>
+      </div>
 
-    <header class="text-center mb-8 relative">
-      <!-- Auth Actions -->
-      <div class="md:absolute top-0 right-0 flex justify-end mb-4 md:mb-0">
-        <div id="auth-ui" class="hidden">
-          <!-- Logged In -->
-          <div id="user-display" class="hidden items-center gap-3">
-            <span class="font-bold text-slate-600" id="username-display"></span>
-            <button onclick="openMyQuestions()"
-              class="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-bold rounded-xl text-xs transition border border-indigo-100">📂
-              My問題</button>
-            <button onclick="logout()"
-              class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-600 font-bold rounded-xl text-xs transition">ログアウト</button>
+      <div class="flex items-center gap-4">
+        <!-- Logged In State -->
+        <div id="user-box" class="hidden items-center gap-4">
+          <div class="hidden text-right sm:block">
+            <p class="text-[10px] font-black uppercase leading-none text-slate-400">Welcome</p>
+            <p id="user-name" class="mt-1 text-xs font-bold leading-none text-slate-600">User</p>
           </div>
-          <!-- Logged Out -->
-          <button id="login-btn" onclick="openAuthModal()"
-            class="px-5 py-2 bg-white text-indigo-600 font-black rounded-full shadow-sm border border-indigo-100 hover:shadow-md hover:scale-105 transition-all text-sm">
-            ⚡ ログイン / 登録
+          <button id="user-avatar-btn"
+            class="relative group h-10 w-10 rounded-full border-2 border-white bg-indigo-50 shadow-sm cursor-pointer overflow-hidden hover:ring-2 hover:ring-indigo-400 transition">
+            <img id="user-avatar-img" src="" alt="avatar" class="h-full w-full object-cover">
+            <div class="absolute inset-0 bg-black/30 hidden group-hover:flex items-center justify-center">
+              <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z">
+                </path>
+              </svg>
+            </div>
+          </button>
+          <button id="logout-btn" class="text-xs font-bold text-slate-400 hover:text-rose-500">ログアウト</button>
+        </div>
+        <!-- Logged Out State -->
+        <button id="login-btn"
+          class="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-black text-white shadow transition hover:bg-indigo-700">
+          ログイン
+        </button>
+      </div>
+    </nav>
+
+    <!-- Content Area -->
+    <main class="flex-grow p-6 md:p-8 overflow-y-auto">
+      <div id="p-generate" class="active block animate-[pageIn_0.5s_ease-out]">
+
+        <div id="status" class="mb-4 hidden text-center font-bold text-slate-500"></div>
+
+        <div class="flex flex-col gap-12 lg:flex-row">
+          <!-- Left Form: Exam & Domain & Difficulty -->
+          <div class="flex-1 space-y-8">
+            <div>
+              <h2 class="mb-2 text-3xl font-black tracking-tight text-slate-800">試験セレクト</h2>
+              <p class="text-sm text-slate-500">ボタンを選ぶだけで、最適な学習プランを作成します。</p>
+            </div>
+
+            <div class="space-y-6">
+              <!-- 1. Category Selection -->
+              <div class="group relative">
+                <label class="mb-2 ml-2 block text-xs font-black uppercase tracking-widest text-slate-400">1.
+                  資格カテゴリ</label>
+                <div id="category-chips" class="chip-grid"></div>
+                <input type="hidden" id="category">
+              </div>
+
+              <!-- 2. Exam Selection (Dependent on Category) -->
+              <div class="group relative" id="exam-area">
+                <label class="mb-2 ml-2 block text-xs font-black uppercase tracking-widest text-slate-400">2.
+                  資格名</label>
+                <div id="exam-chips" class="chip-grid min-h-[48px]"></div>
+                <input type="hidden" id="exam">
+                <p id="exam-hint" class="text-[10px] text-slate-400 mt-2 ml-2 hidden">※カテゴリを選ぶと表示されます</p>
+              </div>
+
+              <!-- 3. Requirement/Topic (Dependent on Exam) -->
+              <div class="group relative" id="topic-area">
+                <label class="mb-2 ml-2 block text-xs font-black uppercase tracking-widest text-slate-400">3.
+                  要件（学習項目）</label>
+                <div id="topic-chips" class="chip-grid max-h-[200px] overflow-y-auto pr-2 min-h-[48px]"></div>
+                <input type="hidden" id="topic">
+                <p id="topic-hint" class="text-[10px] text-slate-400 mt-2 ml-2 hidden">※資格名を選ぶと表示されます</p>
+              </div>
+
+              <!-- Difficulty -->
+              <div class="group rounded-[2rem] border-2 border-dashed border-indigo-200 bg-white/30 p-6">
+                <label class="mb-4 block text-xs font-black uppercase text-indigo-500">4. 難易度</label>
+                <div class="flex gap-3">
+                  <button type="button" onclick="setDiff('1', this)"
+                    class="diff-chip flex-1 rounded-xl border border-transparent bg-white px-2 py-3 text-xs font-black text-slate-400 transition-all hover:border-indigo-100 hover:text-indigo-600">ビギナー</button>
+                  <button type="button" onclick="setDiff('3', this)"
+                    class="diff-chip flex-1 rounded-xl bg-indigo-600 px-2 py-3 text-xs font-black text-white shadow-md active">ミドル</button>
+                  <button type="button" onclick="setDiff('5', this)"
+                    class="diff-chip flex-1 rounded-xl border border-transparent bg-white px-2 py-3 text-xs font-black text-slate-400 transition-all hover:border-indigo-100 hover:text-indigo-600">エキスパート</button>
+                </div>
+                <input type="hidden" id="difficulty" value="3">
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Form -->
+          <div class="flex-1 space-y-8">
+            <div class="mt-0 space-y-6 lg:mt-20">
+              <div class="group">
+                <label class="mb-2 ml-2 block text-xs font-black uppercase tracking-widest text-slate-400">生成問題数</label>
+                <div class="flex items-center gap-4 rounded-2xl bg-white/40 px-4 py-3">
+                  <input type="range" id="count-range"
+                    class="flex-grow accent-indigo-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+                    min="1" max="10" value="4">
+                  <span id="count-display" class="w-8 text-xl font-black text-indigo-600">4</span>
+                </div>
+                <input type="hidden" id="count" value="4">
+              </div>
+
+              <!-- Removed Format and Background fields as requested -->
+
+              <!-- Hidden Notes from original -->
+              <div class="hidden">
+                <textarea id="notes"></textarea>
+              </div>
+
+              <div class="pt-4">
+                <button id="generate"
+                  class="w-full bg-gradient-to-br from-orange-400 to-pink-500 shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50 hover:-translate-y-0.5 transition-all text-white font-black text-xl py-5 rounded-2xl flex items-center justify-center gap-3">
+                  <span>🚀</span> 学習プランを生成
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="generated" class="mt-12 hidden">
+          <div class="mb-8 flex items-center gap-4">
+            <div class="h-px flex-1 bg-slate-300"></div>
+            <div class="text-xl font-black tracking-wider text-indigo-600">GENERATED QUESTIONS</div>
+            <div class="h-px flex-1 bg-slate-300"></div>
+          </div>
+
+          <div id="answer-actions" class="hidden mb-6 flex flex-wrap items-center gap-3 justify-center">
+            <button id="reveal-all-btn" type="button"
+              class="px-6 py-3 rounded-2xl bg-white text-indigo-600 text-sm font-black shadow-sm border border-indigo-100 hover:bg-indigo-50 transition disabled:opacity-60 disabled:cursor-not-allowed">
+              全ての正解を表示
+            </button>
+            <div id="score-summary" class="text-sm font-black text-slate-500"></div>
+          </div>
+
+          <div id="gen-question" class="space-y-6"></div>
+        </div>
+
+      </div>
+    </main>
+
+    <!-- Footer Status Bar -->
+    <footer class="flex items-center justify-between border-t border-white/20 bg-white/20 px-6 py-4 md:px-8 shrink-0">
+      <div class="flex gap-4">
+        <span class="text-[10px] font-black uppercase tracking-widest text-indigo-500">System Status: Optimal</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="h-2 w-2 animate-pulse rounded-full bg-emerald-500"></span>
+        <span class="text-[10px] font-black uppercase text-slate-400">AI Connected</span>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Auth Modal -->
+  <div id="auth-modal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-slate-900/45 backdrop-blur-sm"></div>
+    <div class="absolute left-1/2 top-1/2 w-full max-w-md -translate-x-1/2 -translate-y-1/2 p-4">
+      <div class="rounded-[2rem] bg-white p-8 shadow-2xl">
+        <h2 class="text-2xl font-black text-slate-800">ログイン / 登録</h2>
+        <p class="mt-2 text-xs font-bold text-slate-500">アカウント作成して学習データを保存しよう。</p>
+        <form id="auth-form" class="mt-6 space-y-4">
+          <input id="auth-user" type="text" required placeholder="ユーザー名"
+            class="w-full rounded-xl border-2 border-slate-100 bg-slate-50 px-4 py-3 font-bold text-slate-700 outline-none transition focus:border-indigo-400 focus:bg-white">
+          <input id="auth-pass" type="password" required placeholder="パスワード"
+            class="w-full rounded-xl border-2 border-slate-100 bg-slate-50 px-4 py-3 font-bold text-slate-700 outline-none transition focus:border-indigo-400 focus:bg-white">
+          <div class="flex gap-3 pt-2">
+            <button type="submit" name="action" value="login"
+              class="flex-1 rounded-xl bg-indigo-600 py-3 text-sm font-black text-white transition hover:bg-indigo-700 hover:shadow-lg">
+              ログイン
+            </button>
+            <button type="submit" name="action" value="register"
+              class="flex-1 rounded-xl bg-slate-100 py-3 text-sm font-black text-slate-600 transition hover:bg-slate-200">
+              新規登録
+            </button>
+          </div>
+        </form>
+        <div id="auth-msg" class="mt-4 min-h-[1.25rem] text-center text-xs font-bold text-rose-500"></div>
+        <button id="close-auth"
+          class="mt-2 w-full rounded-lg border border-slate-200 py-2 text-xs font-black text-slate-400 hover:bg-slate-50">
+          閉じる
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Avatar Modal -->
+  <div id="avatar-modal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" id="close-avatar-overlay"></div>
+    <div class="absolute left-1/2 top-1/2 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 p-4">
+      <div class="rounded-[2.5rem] bg-white p-8 shadow-2xl text-center relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-indigo-50 to-white -z-10"></div>
+        <button id="close-avatar"
+          class="absolute top-6 right-6 p-2 rounded-full hover:bg-slate-100 transition text-slate-400">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+
+        <h3 class="text-xl font-black text-slate-800 mb-2">アバターカスタマイズ</h3>
+        <p class="text-xs font-bold text-slate-400 mb-8">自分だけのアイコンを設定しよう</p>
+
+        <div class="relative w-40 h-40 mx-auto mb-8 group">
+          <div class="absolute inset-0 bg-indigo-500 blur-2xl opacity-20 group-hover:opacity-30 transition"></div>
+          <img id="avatar-preview" src="" alt="Avatar Preview"
+            class="w-full h-full rounded-full border-4 border-white shadow-xl bg-white object-cover relative z-10">
+          <button id="random-avatar"
+            class="absolute bottom-2 right-2 bg-indigo-600 text-white p-3 rounded-full shadow-lg hover:bg-indigo-700 hover:scale-110 transition z-20"
+            title="ランダム生成">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+              </path>
+            </svg>
+          </button>
+        </div>
+
+        <div class="space-y-3">
+          <button id="save-avatar"
+            class="w-full py-4 rounded-2xl bg-slate-900 text-white font-black text-sm hover:bg-slate-800 hover:shadow-lg hover:-translate-y-0.5 transition flex items-center justify-center gap-2">
+            保存して閉じる
           </button>
         </div>
       </div>
-
-      <div
-        class="inline-block px-4 py-1 rounded-full bg-white/50 text-indigo-600 text-xs font-black tracking-widest uppercase mb-4 md:mt-6 shadow-sm">
-        Powered by Creative AI
-      </div>
-      <h1 class="text-3xl md:text-5xl font-black text-slate-800 mb-4 tracking-tighter">
-        AIで問題を生成して解く
-      </h1>
-      <p class="text-slate-500 font-medium">理想のロードマップを作成するための、完璧な「種」を撒きましょう。</p>
-      <div id="status" class="mt-4 font-bold text-slate-400 min-h-[1.5em]"></div>
-      <div class="flex flex-wrap items-center justify-center gap-3 mt-4">
-        <a href="/study/index.html"
-          class="px-4 py-2 rounded-full bg-slate-100 text-slate-700 font-black shadow-sm border border-slate-200 hover:shadow-md hover:scale-105 transition-all text-sm">
-          ホームに戻る
-        </a>
-        <button id="stats-open"
-          class="hidden px-4 py-2 rounded-full bg-white text-indigo-600 font-black shadow-sm border border-indigo-100 hover:shadow-md hover:scale-105 transition-all text-sm">
-          成績分析
-        </button>
-        <button id="review-toggle"
-          class="hidden px-4 py-2 rounded-full bg-emerald-50 text-emerald-600 font-black shadow-sm border border-emerald-100 hover:shadow-md hover:scale-105 transition-all text-sm">
-          弱点克服モード
-        </button>
-        <button id="exit-review"
-          class="hidden px-4 py-2 rounded-full bg-slate-100 text-slate-600 font-bold shadow-sm border border-slate-200 hover:shadow-md hover:scale-105 transition-all text-sm">
-          通常モードに戻る
-        </button>
-        <span id="review-indicator"
-          class="hidden px-3 py-1 rounded-full bg-emerald-600 text-white text-xs font-black shadow-sm">
-          復習モード中
-        </span>
-      </div>
-    </header>
-
-    <!-- Auth Modal -->
-    <div id="auth-modal" class="fixed inset-0 z-[100] hidden">
-      <div class="absolute inset-3 md:inset-6 rounded-[32px] bg-slate-900/45"
-        style="backdrop-filter: blur(10px); background: radial-gradient(circle at center, rgba(15,23,42,0.35), rgba(15,23,42,0.62));"
-        onclick="closeAuthModal()"></div>
-      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md p-4">
-        <div class="bg-white rounded-[32px] p-8 shadow-2xl relative overflow-hidden">
-          <div class="text-center mb-6">
-            <h2 class="text-2xl font-black text-slate-800 mb-2">My Account</h2>
-            <p class="text-slate-500 text-sm font-bold">学習履歴を保存しましょう ✨</p>
-          </div>
-
-          <form id="auth-form" onsubmit="handleAuth(event)">
-            <div class="space-y-4">
-              <div class="input-group bg-slate-100/50">
-                <label class="field-label text-xs uppercase tracking-wider text-slate-400">Username</label>
-                <input type="text" id="auth-user" class="text-lg" required>
-              </div>
-              <div class="input-group bg-slate-100/50">
-                <label class="field-label text-xs uppercase tracking-wider text-slate-400">Password</label>
-                <input type="password" id="auth-pass" class="text-lg" required>
-              </div>
-            </div>
-
-            <div class="mt-8 flex gap-3">
-              <button type="submit" name="action" value="login"
-                class="flex-1 py-4 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-200">
-                ログイン
-              </button>
-              <button type="submit" name="action" value="register"
-                class="flex-1 py-4 rounded-xl bg-slate-100 text-slate-600 font-bold hover:bg-slate-200 transition">
-                新規登録
-              </button>
-            </div>
-          </form>
-          <div id="auth-msg" class="text-center mt-4 text-sm font-bold h-4"></div>
-          <button onclick="closeAuthModal()"
-            class="absolute top-4 right-4 p-2 text-slate-300 hover:text-slate-500">✕</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- My Questions Modal -->
-    <div id="my-list-modal" class="fixed inset-0 z-[100] hidden">
-      <div class="absolute inset-3 md:inset-6 rounded-[32px]"
-        style="backdrop-filter: blur(10px); background: radial-gradient(circle at center, rgba(15,23,42,0.35), rgba(15,23,42,0.62));"
-        onclick="document.getElementById('my-list-modal').classList.add('hidden')"></div>
-      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl p-4">
-        <div class="bg-white rounded-[32px] p-6 shadow-2xl relative overflow-hidden flex flex-col max-h-[85vh]">
-          <div class="flex justify-between items-center mb-4">
-            <h2 class="text-xl font-black text-slate-800">📂 My問題リスト</h2>
-            <button onclick="document.getElementById('my-list-modal').classList.add('hidden')"
-              class="p-2 text-slate-300 hover:text-slate-500 font-bold">✕</button>
-          </div>
-          <div id="my-list-container" class="overflow-y-auto flex-1 pr-2 space-y-2">
-            <!-- Content loaded via JS -->
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Stats Modal -->
-    <div id="stats-modal" class="fixed inset-0 z-[110] hidden">
-      <div class="absolute inset-0 bg-slate-900/40" style="backdrop-filter: blur(8px);" onclick="closeStatsModal()"></div>
-      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-3xl p-4 md:p-6">
-        <div class="bg-white rounded-[28px] shadow-2xl p-6 md:p-8 relative overflow-hidden max-h-[85vh] flex flex-col gap-4">
-          <div class="flex items-start justify-between gap-3">
-            <div>
-              <p class="text-xs font-black uppercase tracking-wide text-indigo-500">Dashboard</p>
-              <h3 class="text-2xl font-black text-slate-800">成績分析</h3>
-            </div>
-            <button onclick="closeStatsModal()" class="p-2 text-slate-400 hover:text-slate-600 font-bold">×</button>
-          </div>
-          <div id="stats-content" class="space-y-4 overflow-y-auto pr-1 flex-1">
-            <div class="text-slate-400 text-sm font-bold">読み込み中...</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="grid grid-cols-1 gap-5 items-start">
-      <!-- Section: Basic -->
-      <div class="space-y-5">
-        <!-- Dummy Category (Not used in logic but present in design) -->
-        <div class="input-group">
-          <label class="field-label">
-            <span class="text-xl">🎨</span> カテゴリ (参考)
-          </label>
-          <input id="dummy-category-input" type="text" placeholder="カテゴリを検索または選択">
-          <select id="dummy-category" style="display:none;">
-            <option>IT / テクノロジー</option>
-            <option>ビジネス / ストラテジー</option>
-            <option>クリエイティブ・デザイン</option>
-            <option>ライフハック / 自己啓発</option>
-          </select>
-          <div class="suggest" data-field="dummy-category"></div>
-        </div>
-
-        <div class="input-group">
-          <label class="field-label" for="exam">
-            <span class="text-xl">🏆</span> 試験・目的
-          </label>
-          <input id="exam" type="text" placeholder="例：基本情報・模試 / AWS認定">
-          <div class="suggest" data-field="exam"></div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="input-group">
-            <label class="field-label" for="domain">
-              <span class="text-xl">📚</span> 学習ジャンル
-            </label>
-            <input id="domain" type="text" placeholder="例：ネットワーク / クラウド">
-            <div class="suggest" data-field="domain"></div>
-          </div>
-          <div class="input-group">
-            <label class="field-label" for="topic">
-              <span class="text-xl">🔍</span> トピック
-            </label>
-            <input id="topic" type="text" placeholder="例：TCP/IP / サーバーレス">
-            <div class="suggest" data-field="topic"></div>
-          </div>
-        </div>
-
-        <div class="bg-indigo-50/50 p-4 rounded-3xl border-2 border-dashed border-indigo-200">
-          <label class="field-label text-indigo-600">
-            <span class="text-xl">📊</span> 難易度の設定
-          </label>
-          <!-- Hidden Select for Logic Connectivity -->
-          <select id="difficulty" style="display:none;">
-            <option value="">未指定</option>
-            <option value="1">入門</option>
-            <option value="3" selected>標準</option>
-            <option value="5">応用</option>
-          </select>
-          <div class="chip-group flex gap-3 mt-4">
-            <button type="button" class="flex-1 py-3 px-4 bg-white/50 text-slate-500 hover:bg-white"
-              onclick="setDiff('1', this)">ビギナー</button>
-            <button type="button" class="flex-1 py-3 px-4 bg-white/50 text-slate-500 hover:bg-white chip-active"
-              onclick="setDiff('3', this)">ミドル</button>
-            <button type="button" class="flex-1 py-3 px-4 bg-white/50 text-slate-500 hover:bg-white"
-              onclick="setDiff('5', this)">エキスパート</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Section: Advanced -->
-      <div class="space-y-5">
-        <div class="input-group">
-          <label class="field-label" for="count">
-            <span class="text-xl">💎</span> 生成する問題数
-          </label>
-          <input id="count" type="number" value="4" min="1" max="50" class="text-2xl font-black text-indigo-600"
-            placeholder="例: 4">
-        </div>
-
-        <div class="input-group hidden">
-          <label class="field-label" for="format">
-            <span class="text-xl">📜</span> 出題形式 / 特別な指示
-          </label>
-          <textarea id="format" rows="4" placeholder="例：四択、正答は1つ、解説を必ず付ける。"></textarea>
-        </div>
-
-        <div class="input-group hidden">
-          <label class="field-label" for="background">
-            <span class="text-xl">🧩</span> あなたの今の前提知識
-          </label>
-          <input id="background" type="text" placeholder="例：初学者 / 実務経験あり">
-          <div class="suggest" data-field="background"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Final Section -->
-    <div class="hidden mt-8 p-8 bg-white/30 rounded-[32px] border border-white/40">
-      <label class="field-label" for="notes">
-        <span class="text-xl">🚫</span> 補足・NGワード・用語
-      </label>
-      <textarea id="notes" rows="2" placeholder="例：難解な専門用語は避ける。最新のサービス名を使う。"></textarea>
-    </div>
-
-    <div class="mt-8 text-center">
-      <button id="generate"
-        class="generate-btn w-full md:w-[400px] py-6 rounded-[24px] text-white font-black text-2xl shadow-2xl flex items-center justify-center gap-4 mx-auto group">
-        <span class="group-hover:scale-125 transition-transform">🚀</span>
-        <span id="btn-text">AIで学習プランを生成</span>
-      </button>
-      <p class="mt-6 text-slate-400 text-sm font-bold flex items-center justify-center gap-2">
-        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-          <path
-            d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z">
-          </path>
-        </svg>
-        生成には通常 5〜10秒ほどかかります
-      </p>
-    </div>
-
-    <!-- Results Section -->
-    <div id="generated" class="mt-10" style="display:none;">
-      <div class="flex items-center gap-4 mb-8">
-        <div class="h-px bg-slate-300 flex-1"></div>
-        <div class="text-indigo-600 font-black text-xl tracking-wider">GENERATED QUESTIONS</div>
-        <div class="h-px bg-slate-300 flex-1"></div>
-      </div>
-
-      <div id="answer-actions" class="hidden mb-6 flex flex-wrap items-center gap-3">
-        <button id="reveal-all-btn" type="button"
-          class="px-5 py-2 rounded-xl bg-indigo-600 text-white text-sm font-black shadow-sm hover:bg-indigo-700 transition disabled:opacity-60 disabled:cursor-not-allowed">
-          全問の正解と解説を表示
-        </button>
-        <div id="score-summary" class="text-sm font-black text-slate-500"></div>
-      </div>
-
-      <div id="gen-question" class="space-y-6"></div>
     </div>
   </div>
 
   <script>
-    // --- Auth Logic ---
-    let currentUser = null; // { id, name }
-    let studyMode = 'normal'; // normal or review
-    const entryMode = (new URLSearchParams(window.location.search).get('entry') || 'generate').toLowerCase();
-    let entryHandled = false;
+    // --- Elements ---
+    const loginBtn = document.getElementById('login-btn');
+    const logoutBtn = document.getElementById('logout-btn');
+    const userBox = document.getElementById('user-box');
+    const userName = document.getElementById('user-name');
+    const authModal = document.getElementById('auth-modal');
+    const closeAuthBtn = document.getElementById('close-auth');
+    const authForm = document.getElementById('auth-form');
+    const authMsg = document.getElementById('auth-msg');
 
-  async function checkSession() {
-    try {
-      const res = await fetch('/index.php?r=/me');
-      if (!res.ok) throw new Error('Network response was not ok');
-      const data = await res.json();
-        if (data.logged_in) {
-          currentUser = data.user;
-        } else {
-          currentUser = null;
-        }
-    } catch (e) {
-      console.error(e);
-      currentUser = null;
-    }
-  }
-
-    function updateAuthUI() {
-      const disp = document.getElementById('user-display');
-      const loginBtn = document.getElementById('login-btn');
-      if (currentUser) {
-        disp.classList.remove('hidden');
-        disp.classList.add('flex');
-        loginBtn.classList.add('hidden');
-        const countInfo = currentUser.created_questions_count !== undefined
-          ? ` <span class="bg-indigo-100 text-indigo-600 text-[10px] px-2 py-0.5 rounded-full ml-1">作成: ${currentUser.created_questions_count}</span>`
-          : '';
-        document.getElementById('username-display').innerHTML = `👋 ${currentUser.name}${countInfo}`;
-      } else {
-        disp.classList.add('hidden');
-        disp.classList.remove('flex');
-        loginBtn.classList.remove('hidden');
-      }
-    }
-
-    window.openAuthModal = () => document.getElementById('auth-modal').classList.remove('hidden');
-    window.closeAuthModal = () => document.getElementById('auth-modal').classList.add('hidden');
-
-    window.openMyQuestions = async () => {
-      document.getElementById('my-list-modal').classList.remove('hidden');
-      const container = document.getElementById('my-list-container');
-      container.innerHTML = '<div class="text-center py-10 text-slate-400 font-bold animate-pulse">読み込み中...</div>';
-
-      try {
-        const res = await fetch('/index.php?r=/questions&scope=my');
-        if (!res.ok) throw new Error('Load failed');
-        const data = await res.json();
-
-        if (!data || data.length === 0) {
-          container.innerHTML = '<div class="text-center py-10 text-slate-400 font-bold">まだ問題を作成していません 🍃<br><span class="text-xs font-normal">生成ボタンから問題を作ってみましょう！</span></div>';
-          return;
-        }
-
-        container.innerHTML = data.map(q => `
-            <div class="p-5 border border-slate-100 rounded-2xl bg-slate-50/50 hover:bg-indigo-50/30 transition-colors">
-               <div class="flex flex-wrap gap-2 text-[10px] font-black uppercase text-slate-400 mb-2">
-                  <span class="bg-white border border-slate-200 px-2 py-1 rounded-md tracking-wider">${q.domain_name}</span>
-                  <span class="bg-white border border-slate-200 px-2 py-1 rounded-md tracking-wider">${q.topic_name}</span>
-               </div>
-               <p class="font-bold text-slate-700 text-sm mb-3 leading-relaxed">${q.stem}</p>
-               
-               <div class="space-y-1 mb-3">
-                 ${(q.choices || []).map(c => `
-                   <div class="flex gap-2 text-xs">
-                     <span class="font-bold text-slate-400 w-4">${c.choice_label}.</span>
-                     <span class="text-slate-600 flex-1">${c.choice_text}</span>
-                   </div>
-                 `).join('')}
-               </div>
-
-               <details class="group">
-                  <summary class="cursor-pointer text-xs font-bold text-indigo-500 hover:text-indigo-600 transition flex items-center gap-1 select-none">
-                     <span>👁️ 正解と解説を表示</span>
-                  </summary>
-                  <div class="mt-3 p-4 bg-white rounded-xl border border-indigo-100 text-sm shadow-sm animate-in fade-in slide-in-from-top-2 duration-200">
-                     <div class="flex items-center gap-2 mb-2">
-                        <span class="bg-indigo-600 text-white text-xs font-black px-2 py-0.5 rounded">正解: ${q.correct_label}</span>
-                     </div>
-                     <p class="text-slate-600 leading-relaxed text-xs md:text-sm">${(q.explanation || "").replace(/\n/g, '<br>')}</p>
-                  </div>
-               </details>
-            </div>
-         `).join('');
-      } catch (e) {
-        console.error(e);
-        container.innerHTML = '<div class="text-center py-10 text-rose-400 font-bold">読み込みに失敗しました 😢</div>';
-      }
-    };
-
-    window.handleAuth = async (e) => {
-      e.preventDefault();
-      const user = document.getElementById('auth-user').value;
-      const pass = document.getElementById('auth-pass').value;
-      // Determine which button was clicked
-      const mode = e.submitter.value; // 'login' or 'register'
-      const endpoint = mode === 'register' ? '/index.php?r=/register' : '/index.php?r=/login';
-      const msgEl = document.getElementById('auth-msg');
-
-      try {
-        msgEl.textContent = '通信中...';
-        const res = await fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: user, password: pass })
-        });
-        const data = await res.json();
-
-        if (!res.ok || !data.ok) {
-          msgEl.textContent = data.error || 'エラーが発生しました';
-          msgEl.className = 'text-center mt-4 text-sm font-bold text-rose-500';
-          return;
-        }
-
-        if (mode === 'register') {
-          // Auto login or ask to login? Let's just ask to login for simplicity or auto login if implemented.
-          // For now, let's just attempt login immediately after register or tell user to login.
-          // Actually the plan said register endpoint doesn't return session, so let's log them in.
-          // Re-using credential to login immediately
-          const loginRes = await fetch('/index.php?r=/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: user, password: pass })
-          });
-          const loginData = await loginRes.json();
-          if (loginData.ok) {
-            currentUser = loginData.user;
-            updateAuthUI();
-            closeAuthModal();
-            applyInitialEntryAction();
-            alert(`ようこそ、${currentUser.name}さん！🎉`);
-          }
-        } else {
-          currentUser = data.user;
-          updateAuthUI();
-          closeAuthModal();
-          applyInitialEntryAction();
-        }
-        msgEl.textContent = '';
-      } catch (err) {
-        msgEl.textContent = '通信エラー';
-        msgEl.className = 'text-center mt-4 text-sm font-bold text-rose-500';
-      }
-    };
-
-    window.logout = async () => {
-      await fetch('/index.php?r=/logout');
-      currentUser = null;
-      updateAuthUI();
-    };
-
-    // Init call
-    checkSession().then(() => {
-      applyInitialEntryAction();
-    });
-
-    // Logic Connectivity
-    (function initOneClickLayout() {
-      const createChipField = (id, rawOptions = [], defaultValue = '') => {
-        const oldEl = document.getElementById(id);
-        if (!oldEl) return null;
-
-        const group = oldEl.closest('.input-group');
-        const hiddenEl = document.createElement('input');
-        hiddenEl.type = 'hidden';
-        hiddenEl.id = id;
-
-        const rowEl = document.createElement('div');
-        rowEl.className = 'one-click-row';
-
-        let chips = [];
-
-        const normalizeOptions = (options) => (options || []).map((opt) => {
-          if (typeof opt === 'string') {
-            return { value: opt, label: opt };
-          }
-          return {
-            value: String(opt.value ?? ''),
-            label: String(opt.label ?? opt.value ?? ''),
-          };
-        });
-
-        const setValue = (value, emit = true) => {
-          hiddenEl.value = value;
-          chips.forEach((chip) => {
-            chip.classList.toggle('active', chip.dataset.value === value);
-          });
-          if (emit) {
-            hiddenEl.dispatchEvent(new Event('change', { bubbles: true }));
-          }
-        };
-
-        const setOptions = (options, preferredValue = '') => {
-          const list = normalizeOptions(options);
-          rowEl.innerHTML = '';
-          chips = [];
-
-          list.forEach((opt) => {
-            const chip = document.createElement('button');
-            chip.type = 'button';
-            chip.className = 'one-click-chip';
-            chip.dataset.value = opt.value;
-            chip.textContent = opt.label;
-            chip.addEventListener('click', () => setValue(opt.value));
-            rowEl.appendChild(chip);
-            chips.push(chip);
-          });
-
-          const firstValue = list.length > 0 ? list[0].value : '';
-          const selectedValue = list.some((opt) => opt.value === preferredValue) ? preferredValue : firstValue;
-          setValue(selectedValue, false);
-        };
-
-        oldEl.replaceWith(hiddenEl);
-        group?.querySelectorAll('.suggest').forEach((el) => el.remove());
-        group?.appendChild(rowEl);
-        setOptions(rawOptions, defaultValue);
-
-        return {
-          hiddenEl,
-          setOptions,
-          getValue: () => hiddenEl.value,
-        };
-      };
-
-      const dummyCategoryInput = document.getElementById('dummy-category-input');
-      dummyCategoryInput?.closest('.input-group')?.remove();
-
-      createChipField('exam', [
-        '基本情報技術者試験',
-        '応用情報技術者試験',
-        'ネットワークスペシャリスト',
-        'AWS SAA',
-        'CCNA',
-        'LPIC',
-      ], '基本情報技術者試験');
-
-      const domainTopics = {
-        'ネットワーク': ['OSI参照モデル', 'TCP/IP基礎', 'ルーティング', 'DNS/DHCP', 'VLAN/NAT', 'HTTP/HTTPS'],
-        'セキュリティ': ['認証/認可', '暗号方式', '脆弱性', 'ファイアウォール', 'IDS/IPS', 'ゼロトラスト'],
-        'クラウド': ['IaaS/PaaS/SaaS', '可用性設計', 'IAM', 'VPC', 'コンテナ', 'コスト最適化'],
-        'データベース': ['正規化', 'インデックス', 'トランザクション', 'ロック', 'SQL最適化', 'バックアップ/リストア'],
-        'OS・ミドルウェア': ['プロセス/スレッド', 'メモリ管理', 'ファイルシステム', 'Webサーバー', 'APサーバー', '監視'],
-        'ソフトウェア開発': ['要件定義', '設計', 'テスト', 'CI/CD', 'コードレビュー', '運用改善'],
-      };
-
-      const domainField = createChipField('domain', Object.keys(domainTopics), 'ネットワーク');
-      const topicField = createChipField('topic', [], '');
-
-      const syncTopicOptions = () => {
-        if (!domainField || !topicField) return;
-        const selectedDomain = domainField.getValue();
-        const topics = domainTopics[selectedDomain] || [];
-        topicField.setOptions(topics, topics[0] || '');
-      };
-      domainField?.hiddenEl.addEventListener('change', syncTopicOptions);
-      syncTopicOptions();
-
-      createChipField('count', ['3', '5', '10', '20', '30', '50'], '5');
-
-      const formatEl = document.getElementById('format');
-      formatEl?.closest('.input-group')?.remove();
-
-      const backgroundEl = document.getElementById('background');
-      backgroundEl?.closest('.input-group')?.remove();
-
-      const notesEl = document.getElementById('notes');
-      notesEl?.closest('.mt-8')?.remove();
-      if (notesEl && document.getElementById('notes')) {
-        notesEl.parentElement?.remove();
-      }
-    })();
-
-    const fields = {
-      exam: document.getElementById('exam'),
-      domain: document.getElementById('domain'),
-      topic: document.getElementById('topic'),
-      difficulty: document.getElementById('difficulty'),
-      count: document.getElementById('count'),
-      background: document.getElementById('background') || { value: '' },
-      notes: document.getElementById('notes') || { value: '' },
-    };
-    const dummyCategorySelect = document.getElementById('dummy-category');
-    const statusEl = document.getElementById('status');
     const generateBtn = document.getElementById('generate');
-    const btnText = document.getElementById('btn-text');
+    const statusEl = document.getElementById('status');
     const genWrap = document.getElementById('generated');
+    const genQuestion = document.getElementById('gen-question');
     const answerActions = document.getElementById('answer-actions');
     const revealAllBtn = document.getElementById('reveal-all-btn');
     const scoreSummaryEl = document.getElementById('score-summary');
-    const genQuestion = document.getElementById('gen-question');
-    const reviewToggle = document.getElementById('review-toggle');
-    const exitReviewBtn = document.getElementById('exit-review');
-    const reviewIndicator = document.getElementById('review-indicator');
-    const statsOpenBtn = document.getElementById('stats-open');
-    const statsModal = document.getElementById('stats-modal');
-    const statsContent = document.getElementById('stats-content');
-    const REVIEW_QUESTIONS_ENDPOINT = '/index.php?r=/questions&scope=review';
-    const WEAK_DOMAIN_QUESTION_LIMIT = 5;
-    const DEFAULT_OUTPUT_FORMAT = '四択・標準（正答1つ）';
-    let currentQuestionStates = [];
-    let selectedDomain = '';
-    reviewToggle?.addEventListener('click', activateReviewMode);
-    exitReviewBtn?.addEventListener('click', () => {
-      exitReviewMode();
-      selectedDomain = '';
-      genQuestion.innerHTML = '';
-      genWrap.style.display = 'none';
-      statusEl.textContent = '';
+
+    // UI Helpers
+    const countRange = document.getElementById('count-range');
+    const countDisplay = document.getElementById('count-display');
+    const countInput = document.getElementById('count');
+    const difficultyInput = document.getElementById('difficulty');
+
+    countRange.addEventListener('input', () => {
+      countDisplay.textContent = countRange.value;
+      countInput.value = countRange.value;
     });
-    statsOpenBtn?.addEventListener('click', openStatsModal);
 
-    function applyInitialEntryAction() {
-      if (entryHandled) return;
-
-      if (entryMode === '' || entryMode === 'generate') {
-        entryHandled = true;
-        return;
-      }
-
-      if (!currentUser) {
-        statusEl.textContent = 'ログイン/登録はホーム画面から行ってください。';
-        statusEl.className = 'mt-4 font-bold text-rose-500';
-        entryHandled = true;
-        return;
-      }
-
-      if (entryMode === 'stats') {
-        openStatsModal();
-        entryHandled = true;
-        return;
-      }
-
-      if (entryMode === 'review') {
-        activateReviewMode();
-        entryHandled = true;
-        return;
-      }
-
-      entryHandled = true;
-    }
-
-    async function refreshOverallStats() {
-      if (!statsContent) return;
-      if (!currentUser) {
-        statsContent.innerHTML = '<div class="text-sm font-bold text-slate-500">ログインすると成績分析を表示できます。</div>';
-        return;
-      }
-      statsContent.innerHTML = '<div class="text-slate-400 text-sm font-bold">読み込み中...</div>';
-      try {
-        const res = await fetch('/index.php?r=/stats');
-        const data = await res.json();
-        if (!res.ok || data.ok === false) throw new Error(data.error || 'failed');
-        const acc = data.overall?.accuracy ?? null;
-        const correct = data.overall?.correct ?? 0;
-        const total = data.overall?.total ?? 0;
-
-        const overallCard = `
-          <div class="p-4 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-between">
-            <div>
-              <p class="text-xs font-black uppercase tracking-wide text-indigo-500">Overall</p>
-              <p class="text-2xl font-black text-indigo-700">${acc ?? '--'}%</p>
-              <p class="text-xs font-bold text-slate-500">${correct}/${total} 正解</p>
-            </div>
-            <div class="text-5xl">📊</div>
-          </div>
-        `;
-
-        const sorted = (data.genres || []).slice().sort((a, b) => {
-          const aa = a.accuracy ?? 101;
-          const bb = b.accuracy ?? 101;
-          if (aa === bb) return (b.total ?? 0) - (a.total ?? 0);
-          return aa - bb;
-        });
-          const bars = sorted.length === 0
-            ? '<div class="text-sm text-slate-400 font-bold">データがありません</div>'
-            : sorted.map(g => {
-              const accVal = g.accuracy ?? 0;
-              const width = Math.min(Math.max(accVal, 0), 100);
-              const color = accVal < 40 ? '#f87171' : accVal < 70 ? '#f59e0b' : '#10b981';
-              return `
-              <button type="button" data-domain="${g.name || ''}" class="w-full text-left space-y-1 group">
-                <div class="flex items-center justify-between text-sm font-bold text-slate-600 group-hover:text-indigo-600">
-                  <span>${g.name || '未分類'}</span>
-                  <span>${g.correct}/${g.total} (${accVal ?? '-'}%)</span>
-                </div>
-                <div class="h-2 bg-slate-200 rounded-full overflow-hidden">
-                  <div class="h-full" style="width:${width}%; background:${color};"></div>
-                </div>
-              </button>
-              `;
-            }).join('');
-
-          statsContent.innerHTML = `
-          ${overallCard}
-          <div class="space-y-3">
-            <h4 class="text-sm font-black text-slate-700">分野別 正答率（苦手順）</h4>
-            ${bars}
-          </div>
-        `;
-
-        statsContent.querySelectorAll('[data-domain]').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const dom = btn.getAttribute('data-domain') || '';
-            selectedDomain = dom;
-            closeStatsModal();
-            fetchQuestionsByDomain(dom);
-          });
-        });
-      } catch (e) {
-        statsContent.innerHTML = '<div class="text-xs text-rose-500 font-bold">成績分析の取得に失敗しました</div>';
-      }
-    }
-
-    function openStatsModal() {
-      if (!currentUser) {
-        alert('ログインしてから成績分析を開いてください');
-        return;
-      }
-      statsModal?.classList.remove('hidden');
-      refreshOverallStats();
-    }
-
-    function closeStatsModal() {
-      statsModal?.classList.add('hidden');
-    }
-
-    async function fetchQuestionsByDomain(domain = '') {
-      let url = REVIEW_QUESTIONS_ENDPOINT;
-      if (domain) {
-        url += `&domain=${encodeURIComponent(domain)}`;
-      }
-      try {
-        statusEl.textContent = domain
-          ? `Loading weak questions: ${domain}...`
-          : 'Loading weak questions...';
-        statusEl.className = 'mt-4 font-bold text-slate-500';
-
-        const res = await fetch(url);
-        const data = await res.json();
-        if (!res.ok || !Array.isArray(data)) {
-          throw new Error(data.error || 'Failed to load questions');
-        }
-
-        const shuffled = data.slice();
-        for (let i = shuffled.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-        }
-
-        const weakList = shuffled.slice(0, WEAK_DOMAIN_QUESTION_LIMIT);
-        renderQuestionCards(weakList, true);
-        genWrap.scrollIntoView({ behavior: 'smooth' });
-
-        if (weakList.length === 0) {
-          statusEl.textContent = domain
-            ? `No weak questions in ${domain}`
-            : 'No weak questions';
-          statusEl.className = 'mt-4 font-bold text-slate-400';
-          return;
-        }
-
-        statusEl.textContent = `${domain || 'Weak questions'} (${weakList.length})`;
-        statusEl.className = 'mt-4 font-bold text-emerald-600';
-      } catch (e) {
-        statusEl.textContent = 'Load error: ' + e.message;
-        statusEl.className = 'mt-4 font-bold text-rose-500';
-      }
-    }
-
-    async function activateReviewMode() {
-      if (!currentUser) {
-        alert('弱点克服モードはログインが必要です');
-        return;
-      }
-      reviewToggle.disabled = true;
-      reviewToggle.textContent = '読み込み中...';
-      statusEl.textContent = '復習対象を読み込み中...';
-      statusEl.className = 'mt-4 font-bold text-slate-500';
-      try {
-        const res = await fetch('/index.php?r=/questions&scope=review');
-        const data = await res.json();
-        if (!res.ok || !Array.isArray(data)) {
-          throw new Error(data.error || '読み込みに失敗しました');
-        }
-        if (data.length === 0) {
-          exitReviewMode();
-          statusEl.textContent = '復習対象の問題はありません 🎉';
-          statusEl.className = 'mt-4 font-bold text-emerald-500';
-          return;
-        }
-        studyMode = 'review';
-        reviewIndicator.classList.remove('hidden');
-        exitReviewBtn.classList.remove('hidden');
-        renderQuestionCards(data, true);
-        genWrap.scrollIntoView({ behavior: 'smooth' });
-        statusEl.textContent = '復習モードで出題中';
-        statusEl.className = 'mt-4 font-bold text-emerald-600';
-        refreshOverallStats();
-      } catch (e) {
-        statusEl.textContent = '読み込みエラー: ' + e.message;
-        statusEl.className = 'mt-4 font-bold text-rose-500';
-      } finally {
-        reviewToggle.disabled = false;
-        reviewToggle.textContent = '弱点克服モード';
-      }
-    }
-
-    function exitReviewMode() {
-      studyMode = 'normal';
-      reviewIndicator.classList.add('hidden');
-      exitReviewBtn.classList.add('hidden');
-    }
-
-    function renderQuestionCardsLegacy(list, isReview = false) {
-      if (!Array.isArray(list) || list.length === 0) {
-        genQuestion.innerHTML = '<div class="text-slate-500 font-bold">表示できる問題がありません</div>';
-        genWrap.style.display = 'block';
-        return;
-      }
-
-      genQuestion.innerHTML = list.map((q, idx) => {
-        const choices = (q.choices || []).map(c => `
-          <div class="flex items-start gap-3 p-3 rounded-xl hover:bg-indigo-50 transition-colors">
-              <span class="font-bold text-indigo-500 min-w-[24px]">${c.choice_label}.</span>
-              <span class="text-slate-700 font-medium">${c.choice_text}</span>
-          </div>
-        `).join('');
-
-        const answerBtns = (q.choices || []).map(c =>
-          `<button type="button" class="answer-btn w-12 h-12 rounded-xl text-lg font-bold border-2 border-slate-200 text-slate-500 flex items-center justify-center bg-white" data-label="${c.choice_label}">${c.choice_label}</button>`
-        ).join('');
-
-        const explanation = (q.explanation || '').toString();
-
-        return `
-                  <div class="result-card">
-                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-4">
-                        <h3 class="font-black text-slate-800 text-lg">#${idx + 1} ${q.title || 'Question'}</h3>
-                        <div class="flex items-center gap-2 flex-wrap">
-                          ${isReview ? '<span class="text-[10px] font-black px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">復習</span>' : ''}
-                          <span class="text-xs font-bold px-3 py-1 bg-indigo-100 text-indigo-600 rounded-full w-fit">
-                              ${q.domain_name || 'General'} / ${q.topic_name || 'General'}
-                          </span>
-                        </div>
-                    </div>
-                    
-                    <div class="text-slate-600 font-bold leading-relaxed mb-6 p-4 bg-white/50 rounded-2xl border border-white">
-                        ${q.stem || ''}
-                    </div>
-                    
-                    <div class="space-y-1 mb-6">
-                        ${choices}
-                    </div>
-
-                    <div class="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100 answer-box" 
-                         data-correct="${q.correct_label || ''}" 
-                         data-qid="${q.question_id || ''}" 
-                         data-expl="${encodeURIComponent(explanation)}">
-                         
-                         <div class="flex flex-wrap items-center justify-between gap-4">
-                            <div class="flex items-center gap-3">
-                                <span class="text-sm font-bold text-indigo-400 uppercase tracking-wider">Answer</span>
-                                <div class="flex gap-2">
-                                    ${answerBtns}
-                                </div>
-                            </div>
-                            <button type="button" class="reveal-btn px-6 py-2 bg-white text-indigo-600 text-sm font-black rounded-xl shadow-sm border border-indigo-100 hover:shadow-md transition-all" data-reveal>
-                                Check Answer
-                            </button>
-                         </div>
-                         
-                         <div class="status-msg text-sm mt-3" data-status></div>
-                         <div class="answer-expl mt-4 p-4 bg-white rounded-xl text-slate-600 text-sm leading-relaxed hidden border-l-4 border-indigo-400" data-expl-area></div>
-                    </div>
-                  </div>
-                `;
-      }).join('');
-
-      document.querySelectorAll('.answer-box').forEach(box => {
-        let selected = '';
-        const status = box.querySelector('[data-status]');
-        const explArea = box.querySelector('[data-expl-area]');
-        const reveal = box.querySelector('[data-reveal]');
-        const correct = box.dataset.correct;
-        const qid = Number(box.dataset.qid);
-        const explRaw = decodeURIComponent(box.dataset.expl || '');
-
-        box.querySelectorAll('.answer-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            box.querySelectorAll('.answer-btn').forEach(b => b.classList.remove('selected'));
-            btn.classList.add('selected');
-            selected = btn.dataset.label;
-            status.textContent = `選択: ${selected}`;
-            status.className = 'status-msg text-slate-500';
-          });
-        });
-
-        reveal.addEventListener('click', () => {
-          if (!selected) {
-            status.textContent = '先に解答を選択してください 💦';
-            status.className = 'status-msg err';
-            return;
-          }
-
-          if (qid && currentUser) {
-            fetch('/index.php?r=/answers', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify([{ question_id: qid, selected_label: selected, elapsed_ms: null }])
-            }).catch(console.error);
-          }
-
-          const isCorrect = (selected === correct);
-          status.textContent = isCorrect ? `🎉 正解！ (${correct})` : `😢 残念... 正解は ${correct}`;
-          status.className = 'status-msg ' + (isCorrect ? 'ok' : 'err');
-
-          explArea.innerHTML = `<span class="font-bold block mb-1">解説:</span> ${explRaw.replace(/\\n/g, '<br>')}`;
-          explArea.classList.remove('hidden');
-        });
+    window.setDiff = (val, btn) => {
+      difficultyInput.value = val;
+      document.querySelectorAll('.diff-chip').forEach(b => {
+        b.classList.remove('bg-indigo-600', 'text-white', 'shadow-md', 'active');
+        b.classList.add('bg-white', 'text-slate-400');
       });
+      btn.classList.remove('bg-white', 'text-slate-400');
+      btn.classList.add('bg-indigo-600', 'text-white', 'shadow-md', 'active');
+    };
 
-      genWrap.style.display = 'block';
-    }
+    // --- State ---
+    let currentUser = null;
+    let currentQuestionStates = [];
+    const DEFAULT_OUTPUT_FORMAT = '四択・標準（正答1つ）';
 
-    function renderQuestionCards(list, isReview = false) {
-      currentQuestionStates = [];
+    // --- Auth Logic ---
+    const openAuthModal = (msg = '') => {
+      authMsg.textContent = msg;
+      authModal.classList.remove('hidden');
+    };
 
-      if (!Array.isArray(list) || list.length === 0) {
-        if (answerActions) answerActions.classList.add('hidden');
-        if (revealAllBtn) revealAllBtn.disabled = true;
-        if (scoreSummaryEl) {
-          scoreSummaryEl.textContent = '';
-          scoreSummaryEl.className = 'text-sm font-black text-slate-500';
-        }
-        genQuestion.innerHTML = '<div class="text-slate-500 font-bold">表示できる問題がありません</div>';
-        genWrap.style.display = 'block';
-        return;
+    const closeAuthModal = () => {
+      authModal.classList.add('hidden');
+      authMsg.textContent = '';
+    };
+
+    const updateAuthUI = () => {
+      if (currentUser) {
+        userName.textContent = currentUser.name;
+        // Use notonist style for avatar
+        const seed = currentUser.avatar_seed || currentUser.name;
+        document.getElementById('user-avatar-img').src = `https://api.dicebear.com/7.x/notionists/svg?seed=${seed}&backgroundColor=e0e7ff`;
+
+        userBox.classList.remove('hidden');
+        userBox.classList.add('flex');
+        loginBtn.classList.add('hidden');
+      } else {
+        userBox.classList.add('hidden');
+        userBox.classList.remove('flex');
+        loginBtn.classList.remove('hidden');
       }
+    };
 
-      genQuestion.innerHTML = list.map((q, idx) => {
-        const choices = (q.choices || []).map(c => `
-          <div class="flex items-start gap-3 p-3 rounded-xl hover:bg-indigo-50 transition-colors">
-              <span class="font-bold text-indigo-500 min-w-[24px]">${c.choice_label}.</span>
-              <span class="text-slate-700 font-medium">${c.choice_text}</span>
-          </div>
-        `).join('');
+    const checkSession = async () => {
+      try {
+        const res = await fetch('/index.php?r=/me');
+        const data = await res.json();
+        currentUser = data?.logged_in ? data.user : null;
+      } catch (_) {
+        currentUser = null;
+      }
+      updateAuthUI();
+    };
 
-        const answerBtns = (q.choices || []).map(c =>
-          `<button type="button" class="answer-btn w-12 h-12 rounded-xl text-lg font-bold border-2 border-slate-200 text-slate-500 flex items-center justify-center bg-white" data-label="${c.choice_label}">${c.choice_label}</button>`
-        ).join('');
+    authForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const action = e.submitter?.value || 'login';
+      const endpoint = action === 'register' ? '/index.php?r=/register' : '/index.php?r=/login';
+      const username = document.getElementById('auth-user').value.trim();
+      const password = document.getElementById('auth-pass').value;
 
-        const explanation = (q.explanation || '').toString();
+      try {
+        authMsg.textContent = '送信中...';
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password }),
+        });
+        const data = await res.json();
+        if (!res.ok || data.ok === false) {
+          throw new Error(data.error || '認証に失敗しました');
+        }
 
-        return `
-                  <div class="result-card">
-                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-4">
-                        <h3 class="font-black text-slate-800 text-lg">#${idx + 1} ${q.title || 'Question'}</h3>
-                        <div class="flex items-center gap-2 flex-wrap">
-                          ${isReview ? '<span class="text-[10px] font-black px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">復習</span>' : ''}
-                          <span class="text-xs font-bold px-3 py-1 bg-indigo-100 text-indigo-600 rounded-full w-fit">
-                              ${q.domain_name || 'General'} / ${q.topic_name || 'General'}
-                          </span>
-                        </div>
-                    </div>
-                    
-                    <div class="text-slate-600 font-bold leading-relaxed mb-6 p-4 bg-white/50 rounded-2xl border border-white">
-                        ${q.stem || ''}
-                    </div>
-                    
-                    <div class="space-y-1 mb-6">
-                        ${choices}
-                    </div>
-
-                    <div class="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100 answer-box" 
-                         data-correct="${q.correct_label || ''}" 
-                         data-qid="${q.question_id || ''}" 
-                         data-expl="${encodeURIComponent(explanation)}">
-                         
-                         <div class="flex flex-wrap items-center justify-between gap-4">
-                            <div class="flex items-center gap-3">
-                                <span class="text-sm font-bold text-indigo-400 uppercase tracking-wider">Answer</span>
-                                <div class="flex gap-2">
-                                    ${answerBtns}
-                                </div>
-                            </div>
-                            <button type="button" class="reveal-btn px-6 py-2 bg-white text-indigo-600 text-sm font-black rounded-xl shadow-sm border border-indigo-100 hover:shadow-md transition-all" data-reveal>
-                                Check Answer
-                            </button>
-                         </div>
-                         
-                         <div class="status-msg text-sm mt-3" data-status></div>
-                         <div class="answer-expl mt-4 p-4 bg-white rounded-xl text-slate-600 text-sm leading-relaxed hidden border-l-4 border-indigo-400" data-expl-area></div>
-                    </div>
-                  </div>
-                `;
-      }).join('');
-
-      const saveAnswerSelection = async (state) => {
-        if (!state.qid || !currentUser || !state.selected) return;
-        if (state.lastSavedLabel === state.selected) return;
-
-        const selectedLabel = state.selected;
-        state.lastSavedLabel = selectedLabel;
-        try {
-          await fetch('/index.php?r=/answers', {
+        if (action === 'register') {
+          const loginRes = await fetch('/index.php?r=/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify([{ question_id: state.qid, selected_label: selectedLabel, elapsed_ms: null }]),
+            body: JSON.stringify({ username, password }),
           });
-        } catch (_) {
-          if (state.lastSavedLabel === selectedLabel) {
-            state.lastSavedLabel = '';
+          const loginData = await loginRes.json();
+          if (!loginRes.ok || loginData.ok === false) {
+            throw new Error(loginData.error || '再ログインに失敗しました');
           }
-        }
-      };
-
-      const updateScoreSummary = (finalized = false) => {
-        if (!scoreSummaryEl) return;
-        const total = currentQuestionStates.length;
-        const correctCount = currentQuestionStates.filter((s) => s.revealed && s.isCorrect).length;
-        const judged = currentQuestionStates.filter((s) => s.revealed).length;
-        scoreSummaryEl.textContent = finalized
-          ? `正解 ${correctCount} / ${total}`
-          : `正解 ${correctCount} / ${total}（判定済み ${judged}問）`;
-        scoreSummaryEl.className = finalized
-          ? 'text-sm font-black text-emerald-600'
-          : 'text-sm font-black text-indigo-700';
-      };
-
-      const updateRevealAllState = () => {
-        if (!revealAllBtn) return;
-        const total = currentQuestionStates.length;
-        const selectedCount = currentQuestionStates.filter((s) => !!s.selected).length;
-        revealAllBtn.disabled = !(total > 0 && selectedCount === total);
-      };
-
-      const showOneResult = async (state, allowUnanswered = false) => {
-        if (!state.selected) {
-          if (!allowUnanswered) {
-            state.status.textContent = '先に解答を選択してください';
-            state.status.className = 'status-msg err';
-            return false;
-          }
-          state.status.textContent = `未回答 / 正解: ${state.correct || '-'}`;
-          state.status.className = 'status-msg err';
-          state.explArea.innerHTML = `<span class="font-bold block mb-1">解説:</span> ${state.explRaw.replace(/\\n/g, '<br>')}`;
-          state.explArea.classList.remove('hidden');
-          state.revealed = true;
-          state.isCorrect = false;
-          return false;
-        }
-
-        await saveAnswerSelection(state);
-        const isCorrect = state.selected === state.correct;
-        state.status.textContent = isCorrect ? `正解 (${state.correct})` : `不正解 / 正解: ${state.correct}`;
-        state.status.className = 'status-msg ' + (isCorrect ? 'ok' : 'err');
-        state.explArea.innerHTML = `<span class="font-bold block mb-1">解説:</span> ${state.explRaw.replace(/\\n/g, '<br>')}`;
-        state.explArea.classList.remove('hidden');
-        state.revealed = true;
-        state.isCorrect = isCorrect;
-        return isCorrect;
-      };
-
-      document.querySelectorAll('.answer-box').forEach(box => {
-        const state = {
-          selected: '',
-          revealed: false,
-          isCorrect: false,
-          lastSavedLabel: '',
-          correct: box.dataset.correct || '',
-          qid: Number(box.dataset.qid),
-          explRaw: decodeURIComponent(box.dataset.expl || ''),
-          status: box.querySelector('[data-status]'),
-          explArea: box.querySelector('[data-expl-area]'),
-          revealBtn: box.querySelector('[data-reveal]'),
-          box,
-        };
-        currentQuestionStates.push(state);
-
-        box.querySelectorAll('.answer-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            box.querySelectorAll('.answer-btn').forEach(b => b.classList.remove('selected'));
-            btn.classList.add('selected');
-            state.selected = btn.dataset.label || '';
-            state.status.textContent = `選択: ${state.selected}`;
-            state.status.className = 'status-msg text-slate-500';
-            saveAnswerSelection(state).catch(() => {});
-            updateRevealAllState();
-          });
-        });
-
-        state.revealBtn?.addEventListener('click', async () => {
-          await showOneResult(state, false);
-          updateScoreSummary(false);
-        });
-      });
-
-      if (answerActions) {
-        answerActions.classList.remove('hidden');
-      }
-      if (scoreSummaryEl) {
-        scoreSummaryEl.textContent = `正解 0 / ${currentQuestionStates.length}（判定済み 0問）`;
-        scoreSummaryEl.className = 'text-sm font-black text-slate-500';
-      }
-      if (revealAllBtn) {
-        revealAllBtn.disabled = true;
-        revealAllBtn.onclick = async () => {
-          if (revealAllBtn.disabled) return;
-          revealAllBtn.disabled = true;
-          try {
-            await Promise.all(currentQuestionStates.map((state) => showOneResult(state, false)));
-            updateScoreSummary(true);
-          } finally {
-            updateRevealAllState();
-          }
-        };
-      }
-      updateRevealAllState();
-
-      genWrap.style.display = 'block';
-    }
-
-    // UI Helper: Difficulty Chip Toggle
-    window.setDiff = function (val, btn) {
-      fields.difficulty.value = val;
-      const group = btn.parentElement;
-      group.querySelectorAll('button').forEach(b => b.classList.remove('chip-active'));
-      btn.classList.add('chip-active');
-
-      // Haptic-like animation
-      btn.style.transform = 'scale(0.95)';
-      setTimeout(() => btn.style.transform = 'translateY(-2px)', 100);
-    };
-
-    // Suggestion Logic
-    const suggestionData = {
-      'dummy-category': Array.from(dummyCategorySelect?.options || []).map(o => o.text),
-      exam: ['基本情報技術者', '応用情報技術者', '情報処理安全確保支援士', 'AWS認定クラウドプラクティショナー', 'AWS認定ソリューションアーキテクト', 'CCNA', 'LPIC', '模試演習'],
-      domain: ['ネットワーク', 'セキュリティ', 'クラウド', 'データベース', 'OS・ミドルウェア', 'ソフトウェア開発', 'マネジメント', 'ストラテジ'],
-      topic: ['OSI参照モデル', 'TCP/IP基礎', 'サブネット計算', 'ファイアウォール/IDS/IPS', '暗号/認証', 'AWS基礎サービス', 'コンテナ/Kubernetes', 'SQL最適化', '要件定義', 'プロジェクト管理'],
-      background: ['初学者', 'IT基礎あり', '実務経験1-2年', 'ネットワーク経験あり', '開発経験あり', 'セキュリティ未経験', 'クラウド未経験']
-    };
-
-    function attachSuggest(input, key) {
-      if (!input) return;
-      const box = input.parentElement.querySelector('.suggest');
-      const list = suggestionData[key] || [];
-      if (!box || list.length === 0) return;
-      function renderSuggestions(term = '') {
-        const t = term.trim().toLowerCase();
-        const filtered = list.filter(v => !t || v.toLowerCase().includes(t)).slice(0, 20);
-        if (filtered.length === 0) {
-          box.style.display = 'none';
+          currentUser = loginData.user;
         } else {
-          box.innerHTML = filtered.map(v => `<button type="button" data-val="${v}">${v}</button>`).join('');
-          box.style.display = 'block';
-          box.querySelectorAll('button').forEach(btn => {
-            btn.addEventListener('mousedown', (e) => e.preventDefault()); // avoid text selection flash
-            btn.addEventListener('click', (e) => {
-              e.preventDefault();
-              input.value = btn.dataset.val || '';
-              if (key === 'dummy-category' && dummyCategorySelect) {
-                const opt = Array.from(dummyCategorySelect.options).find(o => o.text === btn.dataset.val);
-                if (opt) dummyCategorySelect.value = opt.value;
-              }
-              input.dispatchEvent(new Event('input', { bubbles: true }));
-              setTimeout(() => {
-                box.style.display = 'none';
-                input.focus({ preventScroll: true });
-                try {
-                  const len = input.value.length;
-                  input.setSelectionRange(len, len);
-                } catch (_) { }
-              }, 0);
-            });
-          });
+          currentUser = data.user;
         }
+
+        updateAuthUI();
+        closeAuthModal();
+      } catch (err) {
+        authMsg.textContent = err.message;
       }
+    });
 
-      const hideBox = () => { box.style.display = 'none'; };
 
-      input.addEventListener('focus', () => renderSuggestions(input.value));
-      input.addEventListener('click', () => renderSuggestions(input.value));
-      input.addEventListener('input', () => renderSuggestions(input.value));
-      input.addEventListener('blur', (e) => {
-        const next = e.relatedTarget;
-        if (next && box.contains(next)) return;
-        setTimeout(() => hideBox(), 200);
-      });
+    // Avatar Elements
+    const avatarBtn = document.getElementById('user-avatar-btn');
+    const avatarImg = document.getElementById('user-avatar-img');
+    const avatarModal = document.getElementById('avatar-modal');
+    const closeAvatarBtn = document.getElementById('close-avatar');
+    const closeAvatarOverlay = document.getElementById('close-avatar-overlay');
+    const avatarPreview = document.getElementById('avatar-preview');
+    const randomAvatarBtn = document.getElementById('random-avatar');
+    const saveAvatarBtn = document.getElementById('save-avatar');
 
-      document.addEventListener('pointerdown', (e) => {
-        if (e.target === input || box.contains(e.target)) return;
-        hideBox();
+    let currentSeed = '';
+    let tempSeed = '';
+
+    const getAvatarUrl = (seed) => `https://api.dicebear.com/7.x/notionists/svg?seed=${seed}&backgroundColor=e0e7ff`;
+
+    const openAvatarModal = () => {
+      if (!currentUser) return;
+      tempSeed = currentUser.avatar_seed || currentUser.name;
+      avatarPreview.src = getAvatarUrl(tempSeed);
+      avatarModal.classList.remove('hidden');
+    };
+
+    const closeAvatarModalState = () => {
+      avatarModal.classList.add('hidden');
+    };
+
+    const generateRandomAvatar = () => {
+      tempSeed = Math.random().toString(36).substring(7);
+      avatarPreview.src = getAvatarUrl(tempSeed);
+    };
+
+    const saveAvatar = async () => {
+      if (!currentUser) return;
+      const oldSeed = currentUser.avatar_seed;
+
+      // Optimistic update
+      currentUser.avatar_seed = tempSeed;
+      if (avatarImg) avatarImg.src = getAvatarUrl(tempSeed);
+      closeAvatarModalState();
+
+      try {
+        const res = await fetch('/index.php?r=/profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ avatar_seed: tempSeed })
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error);
+      } catch (err) {
+        console.error('Failed to save avatar:', err);
+        // Revert
+        currentUser.avatar_seed = oldSeed;
+        if (avatarImg) avatarImg.src = getAvatarUrl(oldSeed || currentUser.name);
+        alert('保存に失敗しました');
+      }
+    };
+
+    if (avatarBtn) avatarBtn.addEventListener('click', openAvatarModal);
+    if (closeAvatarBtn) closeAvatarBtn.addEventListener('click', closeAvatarModalState);
+    if (closeAvatarOverlay) closeAvatarOverlay.addEventListener('click', closeAvatarModalState);
+    if (randomAvatarBtn) randomAvatarBtn.addEventListener('click', generateRandomAvatar);
+    if (saveAvatarBtn) saveAvatarBtn.addEventListener('click', saveAvatar);
+
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', async () => {
+        if (!confirm('ログアウトしますか？')) return;
+        await fetch('/index.php?r=/logout');
+        currentUser = null;
+        updateAuthUI();
       });
     }
 
-    attachSuggest(fields.exam, 'exam');
-    attachSuggest(fields.domain, 'domain');
-    attachSuggest(fields.topic, 'topic');
+    loginBtn.addEventListener('click', () => openAuthModal());
+    closeAuthBtn.addEventListener('click', closeAuthModal);
 
-    // Generate Action
+    // --- Chip UI Logic (Cascading: Category -> Exam -> Topic) ---
+    const chipData = {
+      // Level 1: Categories
+      categories: [
+        '国家試験（情報処理技術者）',
+        'クラウド（AWS）',
+        'ネットワーク（Cisco）',
+        'Linux',
+        'プログラミング言語（資格）'
+      ],
+
+      // Level 1 -> Level 2: Category to Exams
+      category_to_exams: {
+        '国家試験（情報処理技術者）': ['ITパスポート', '情報セキュリティマネジメント', '基本情報技術者', '応用情報技術者', '情報処理安全確保支援士'],
+        'クラウド（AWS）': ['AWS Cloud Practitioner', 'AWS Solutions Architect Associate'],
+        'ネットワーク（Cisco）': ['Cisco CCNA'],
+        'Linux': ['LinuC Level 1 / LPIC-1'],
+        'プログラミング言語（資格）': ['C言語（プログラミング能力認定試験など）', 'Java Silver', 'Python 3 エンジニア認定基礎']
+      },
+
+      // Level 2 -> Level 3: Exam to Topics
+      exam_to_topics: {
+        'ITパスポート': ['ストラテジ系（企業活動・法務・経営戦略）', 'マネジメント系（システム開発・サービス管理）', 'テクノロジー系（基礎理論・アルゴリズム）', 'システム構成要素・ネットワーク・DB', 'セキュリティ基礎'],
+        '情報セキュリティマネジメント': ['情報セキュリティマネジメント（ISMS/リスク管理）', '脅威とサイバー攻撃手法', 'セキュリティ対策技術（暗号・認証・実装）', 'セキュリティ関連法規・ガイドライン', 'インシデント対応・組織的対策'],
+        '基本情報技術者': ['コンピュータ基礎（CPU/メモリ/OS）', 'ネットワーク基礎', 'データベース基礎', 'セキュリティ基礎', 'アルゴリズムとプログラミング基礎', '開発の基礎（要件定義〜テスト）'],
+        '応用情報技術者': ['基本情報の範囲＋深掘り', 'システム設計・アーキテクチャ', 'プロジェクトマネジメント', 'サービスマネジメント', '経営・法務・戦略', '記述式対策（文章で説明する力）'],
+        '情報処理安全確保支援士': ['セキュリティ全般（脅威/脆弱性/対策）', '暗号・認証', 'ネットワーク/OSのセキュリティ', 'インシデント対応', 'ログ分析・フォレンジック基礎', '記述式・ケース問題対策'],
+        'AWS Cloud Practitioner': ['AWSの基本サービス（EC2/S3/RDSなどの役割）', 'クラウド概念（IaaS/PaaS/SaaS）', 'セキュリティと責任共有モデル', '料金・請求（課金の考え方）', '基本的なアーキテクチャ概念'],
+        'AWS Solutions Architect Associate': ['可用性・冗長化設計', 'ストレージ設計（S3/EBS/EFSなど）', 'ネットワーク設計（VPC/サブネット/ルート）', 'セキュリティ設計（IAM/KMS/セキュリティグループ）', '監視と運用（CloudWatchなど）', 'コスト最適化設計', '代表的構成パターン（3層、サーバレスなど）'],
+        'Cisco CCNA': ['ネットワーク基礎（IP/サブネット）', 'ルーティング/スイッチング基礎', 'VLAN / STP など', 'ACL / NAT など', '無線の基礎', '自動化の入口（ネットワーク自動化の概念）', 'トラブルシューティング基礎'],
+        'LinuC Level 1 / LPIC-1': ['Linux基本操作（ファイル/権限/プロセス）', 'シェルと基本コマンド', 'パッケージ管理', 'ユーザー/グループ管理', 'ネットワーク設定の基礎', 'ログ確認・障害の基本対応', 'セキュリティの基本（権限・SSHなど）'],
+        'C言語（プログラミング能力認定試験など）': ['文法基礎（データ型、演算子、制御文）', 'ポインタとメモリ管理（アドレス、参照）', '配列と文字列操作', '関数と変数のスコープ', '構造体と共用体', 'ファイル入出力・プリプロセッサ'],
+        'Java Silver': ['文法基礎（型・演算子・制御構文）', 'クラスとオブジェクト指向基礎', '継承/ポリモーフィズムの基礎', '例外処理', 'コレクション基礎'],
+        'Python 3 エンジニア認定基礎': ['文法基礎（型・制御・関数）', '文字列/リスト/辞書などデータ構造', 'モジュール/パッケージの基礎', '例外処理', '基本文法の読解（コードを読める）']
+      }
+    };
+
+    const chips = {
+      category: { container: document.getElementById('category-chips'), input: document.getElementById('category') },
+      exam: { container: document.getElementById('exam-chips'), input: document.getElementById('exam') },
+      topic: { container: document.getElementById('topic-chips'), input: document.getElementById('topic') }
+    };
+
+    // Generic render function
+    function renderChips(key, options, defaultVal = null, onSelect = null) {
+      const { container, input } = chips[key];
+      container.innerHTML = '';
+
+      if (!options || options.length === 0) {
+        return;
+      }
+
+      options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'chip-btn';
+        btn.textContent = opt;
+        btn.onclick = () => {
+          container.querySelectorAll('.chip-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          input.value = opt;
+          if (onSelect) onSelect(opt);
+        };
+        container.appendChild(btn);
+
+        if (defaultVal && opt === defaultVal) {
+          setTimeout(() => btn.click(), 0);
+        }
+      });
+    }
+
+    // 1. Update Exams based on Category
+    function updateExams(categoryName) {
+      const exams = chipData.category_to_exams[categoryName] || [];
+      const examArea = document.getElementById('exam-area');
+      const examHint = document.getElementById('exam-hint');
+
+      if (exams.length > 0) {
+        examArea.classList.remove('opacity-50', 'pointer-events-none');
+        examHint.classList.add('hidden');
+        renderChips('exam', exams, exams[0], (selectedExam) => {
+          updateTopics(selectedExam);
+        });
+      } else {
+        chips.exam.container.innerHTML = '';
+        chips.exam.input.value = '';
+        chips.topic.container.innerHTML = '';
+        chips.topic.input.value = ''; // clear downstream
+      }
+    }
+
+    // 2. Update Topics based on Exam
+    function updateTopics(examName) {
+      const topicList = chipData.exam_to_topics[examName] || [];
+      const topicArea = document.getElementById('topic-area');
+      const topicHint = document.getElementById('topic-hint');
+
+      if (topicList.length > 0) {
+        topicArea.classList.remove('opacity-50', 'pointer-events-none');
+        topicHint.classList.add('hidden');
+        renderChips('topic', topicList, topicList[0]);
+      } else {
+        chips.topic.container.innerHTML = '';
+        chips.topic.input.value = '';
+        topicHint.classList.remove('hidden');
+        topicHint.textContent = '※選択された試験に要件定義がありません';
+      }
+    }
+
+    // Initialize: Render Categories -> Triggers Exam update -> Triggers Topic update
+    renderChips('category', chipData.categories, chipData.categories[0], (selectedCategory) => {
+      updateExams(selectedCategory);
+    });
+
+    // --- Generation Logic ---
     generateBtn.addEventListener('click', async () => {
-      // UI Loading State
       const originalContent = generateBtn.innerHTML;
       generateBtn.innerHTML = `
-            <svg class="animate-spin h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <svg class="animate-spin h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            <span class="ml-3">思考中...</span>
+            <span class="ml-3">生成中...</span>
         `;
       generateBtn.style.pointerEvents = 'none';
       statusEl.textContent = 'AIが問題を生成しています...';
-      statusEl.className = 'mt-4 font-bold text-indigo-500';
-      genWrap.style.display = 'none';
+      statusEl.classList.remove('hidden');
+      statusEl.className = 'mb-4 text-center font-bold text-indigo-500';
+      genWrap.classList.add('hidden');
 
       try {
-        const requestedCount = Math.max(1, Math.min(parseInt(fields.count.value, 10) || 4, 50)); // Adjusted max logic
         const req = {
-          genre: fields.domain.value || '',
-          problem_type: fields.topic.value || '',
+          genre: document.getElementById('category').value || '', // Map Category to Genre
+          problem_type: document.getElementById('topic').value || '', // Map Topic to Problem Type
           background: '',
           output_format: DEFAULT_OUTPUT_FORMAT,
-          constraints: `難易度:${fields.difficulty.value || '標準'}`,
+          constraints: `試験名:${document.getElementById('exam').value}, 難易度:${document.getElementById('difficulty').value || '3'}`,
           notes: '',
-          count: requestedCount
+          count: parseInt(document.getElementById('count').value, 10) || 4
         };
 
         const res = await fetch('/index.php?r=/generate', {
@@ -1477,32 +728,188 @@
 
         // Success UI
         generateBtn.innerHTML = '<span>🎉 生成完了！</span>';
-        generateBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #3b82f6 100%)';
+        generateBtn.classList.add('from-emerald-400', 'to-emerald-600');
         setTimeout(() => {
           generateBtn.innerHTML = originalContent;
-          generateBtn.style.background = ''; // reset to css default
+          generateBtn.classList.remove('from-emerald-400', 'to-emerald-600');
           generateBtn.style.pointerEvents = 'auto';
         }, 3000);
 
         statusEl.textContent = `生成成功: ${body.questions ? body.questions.length : 0}問`;
-        statusEl.className = 'mt-4 font-bold text-emerald-500';
+        statusEl.className = 'mb-4 text-center font-bold text-emerald-500';
 
-        // Render Questions
-        renderQuestionCards(body.questions || [], false);
+        renderQuestionCards(body.questions || []);
+        genWrap.classList.remove('hidden');
         genWrap.scrollIntoView({ behavior: 'smooth' });
-        refreshOverallStats();
 
       } catch (e) {
         console.error(e);
         generateBtn.innerHTML = originalContent;
         generateBtn.style.pointerEvents = 'auto';
-        statusEl.textContent = 'エラーが発生しました: ' + e.message;
-        statusEl.className = 'mt-4 font-bold text-rose-500';
+        statusEl.textContent = 'エラーが発生しました';
+        statusEl.className = 'mb-4 text-center font-bold text-rose-500';
       }
     });
-  </script>
 
+    const saveAnswerSelection = async (state) => {
+      if (!state.qid || !currentUser || !state.selected) return;
+      if (state.lastSavedLabel === state.selected) return;
+
+      const selectedLabel = state.selected;
+      state.lastSavedLabel = selectedLabel;
+      try {
+        await fetch('/index.php?r=/answers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify([{ question_id: state.qid, selected_label: selectedLabel, elapsed_ms: null }]),
+        });
+      } catch (_) {
+        if (state.lastSavedLabel === selectedLabel) {
+          state.lastSavedLabel = '';
+        }
+      }
+    };
+
+    const updateScoreSummary = (finalized = false) => {
+      const total = currentQuestionStates.length;
+      const correctCount = currentQuestionStates.filter((s) => s.revealed && s.isCorrect).length;
+      const judged = currentQuestionStates.filter((s) => s.revealed).length;
+      scoreSummaryEl.textContent = finalized
+        ? `正解 ${correctCount} / ${total}`
+        : `正解 ${correctCount} / ${total}`;
+    };
+
+    const updateRevealAllState = () => {
+      const total = currentQuestionStates.length;
+      const selectedCount = currentQuestionStates.filter((s) => !!s.selected).length;
+      revealAllBtn.disabled = !(total > 0 && selectedCount === total);
+    };
+
+    function renderQuestionCards(list) {
+      currentQuestionStates = [];
+
+      if (!Array.isArray(list) || list.length === 0) {
+        genQuestion.innerHTML = '<div class="text-slate-500 font-bold">表示できる問題がありません</div>';
+        return;
+      }
+
+      if (answerActions) answerActions.classList.remove('hidden');
+
+      genQuestion.innerHTML = list.map((q, idx) => {
+        const choices = (q.choices || []).map(c => `
+          <div class="flex items-start gap-3 p-3 rounded-xl hover:bg-indigo-50 transition-colors">
+              <span class="font-bold text-indigo-500 min-w-[24px]">${c.choice_label}.</span>
+              <span class="text-slate-700 font-medium">${c.choice_text}</span>
+          </div>
+        `).join('');
+
+        const answerBtns = (q.choices || []).map(c =>
+          `<button type="button" class="answer-btn w-12 h-12" data-label="${c.choice_label}">${c.choice_label}</button>`
+        ).join('');
+
+        const explanation = (q.explanation || '').toString();
+
+        return `
+            <div class="result-card">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-4">
+                <h3 class="font-black text-slate-800 text-lg">#${idx + 1} ${q.title || 'Question'}</h3>
+                <span class="text-xs font-bold px-3 py-1 bg-indigo-100 text-indigo-600 rounded-full w-fit">
+                    ${q.domain_name || 'General'}
+                </span>
+            </div>
+            
+            <div class="text-slate-600 font-bold leading-relaxed mb-6 p-4 bg-white/50 rounded-2xl border border-white">
+                ${q.stem || ''}
+            </div>
+            
+            <div class="space-y-1 mb-6">
+                ${choices}
+            </div>
+
+            <div class="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100 answer-box" 
+                    data-correct="${q.correct_label || ''}" 
+                    data-qid="${q.question_id || ''}" 
+                    data-expl="${encodeURIComponent(explanation)}">
+                    
+                    <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm font-bold text-indigo-400 uppercase tracking-wider">Answer</span>
+                        <div class="flex gap-2">
+                            ${answerBtns}
+                        </div>
+                    </div>
+                    <button type="button" class="reveal-btn px-6 py-2 bg-white text-indigo-600 text-sm font-black rounded-xl shadow-sm border border-indigo-100 hover:shadow-md transition-all" data-reveal>
+                        Check Answer
+                    </button>
+                    </div>
+                    
+                    <div class="status-msg text-sm mt-3" data-status></div>
+                    <div class="answer-expl mt-4 p-4 bg-white rounded-xl text-slate-600 text-sm leading-relaxed hidden border-l-4 border-indigo-400" data-expl-area></div>
+            </div>
+            </div>
+        `;
+      }).join('');
+
+      document.querySelectorAll('.answer-box').forEach(box => {
+        const state = {
+          selected: '',
+          revealed: false,
+          isCorrect: false,
+          lastSavedLabel: '',
+          correct: box.dataset.correct || '',
+          qid: Number(box.dataset.qid),
+          explRaw: decodeURIComponent(box.dataset.expl || ''),
+          status: box.querySelector('[data-status]'),
+          explArea: box.querySelector('[data-expl-area]'),
+          revealBtn: box.querySelector('[data-reveal]'),
+        };
+        currentQuestionStates.push(state);
+
+        box.querySelectorAll('.answer-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            box.querySelectorAll('.answer-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            state.selected = btn.dataset.label;
+            state.status.textContent = `選択: ${state.selected}`;
+            state.status.className = 'status-msg text-slate-500';
+            saveAnswerSelection(state);
+            updateRevealAllState();
+          });
+        });
+
+        state.revealBtn.addEventListener('click', () => {
+          if (!state.selected) {
+            state.status.textContent = '先に解答を選択してください';
+            state.status.className = 'status-msg text-rose-500 font-bold';
+            return;
+          }
+          const isCorrect = state.selected === state.correct;
+          state.isCorrect = isCorrect;
+          state.revealed = true;
+
+          state.status.textContent = isCorrect ? `🎉 正解！ (${state.correct})` : `😢 残念... 正解は ${state.correct}`;
+          state.status.className = isCorrect ? 'status-msg text-emerald-500 font-bold' : 'status-msg text-rose-500 font-bold';
+
+          state.explArea.innerHTML = `<span class="font-bold block mb-1">解説:</span> ${state.explRaw.replace(/\\n/g, '<br>')}`;
+          state.explArea.classList.remove('hidden');
+          state.revealBtn.style.display = 'none';
+
+          updateScoreSummary();
+        });
+      });
+
+      if (revealAllBtn) {
+        revealAllBtn.onclick = () => {
+          document.querySelectorAll('.reveal-btn').forEach(b => b.click());
+        };
+      }
+
+      updateScoreSummary();
+      updateRevealAllState();
+    }
+
+    checkSession();
+  </script>
 </body>
 
 </html>
-

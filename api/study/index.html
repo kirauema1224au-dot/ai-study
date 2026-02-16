@@ -4,19 +4,24 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>学習モードを選択</title>
+  <title>STUDY LAUNCHER | Premium UI</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap"
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800;900&display=swap"
     rel="stylesheet">
   <style type="text/tailwindcss">
     :root {
+      --primary: #6366f1;
+      --secondary: #ec4899;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
       --bg-gradient: linear-gradient(135deg, #fef9c3 0%, #d8b4fe 50%, #818cf8 100%);
     }
 
     body {
-      @apply min-h-screen flex items-center justify-center p-4 md:p-6 text-slate-800;
+      @apply min-h-screen flex items-center justify-center p-4 md:p-6 text-slate-800 overflow-x-hidden;
       font-family: "M PLUS Rounded 1c", sans-serif;
       background: var(--bg-gradient);
       background-size: 400% 400%;
@@ -29,141 +34,199 @@
       100% { background-position: 0% 50%; }
     }
 
-    .main-card {
-      @apply rounded-[48px] border border-white/40 max-w-6xl w-full p-8 md:p-16 relative overflow-hidden;
-      background: rgba(255, 255, 255, 0.6);
-      -webkit-backdrop-filter: blur(20px);
-      backdrop-filter: blur(20px);
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1), inset 0 0 20px rgba(255, 255, 255, 0.5);
+    /* Shell Components */
+    .glass-container {
+      @apply w-full max-w-[1100px] flex flex-col overflow-hidden rounded-[3rem] border border-white/40 bg-white/60 shadow-2xl;
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+      min-height: 80vh;
     }
 
-    .entry-card {
-      @apply flex h-full flex-col justify-between rounded-[32px] border border-white/50 bg-white/40 p-8 shadow-sm transition-all duration-300 relative overflow-hidden;
-      backdrop-filter: blur(8px);
+    .nav-link {
+      @apply relative px-4 py-2 font-black text-slate-500 transition-all hover:text-indigo-600;
     }
 
-    .entry-card:hover {
-      @apply -translate-y-2 shadow-2xl bg-white/60 border-white/80;
+    .nav-link.active {
+      @apply text-indigo-600;
     }
 
-    .entry-tag {
-      @apply inline-flex w-fit rounded-full px-4 py-1.5 text-xs font-black uppercase tracking-wider shadow-sm;
+    .nav-link.active::after {
+      content: '';
+      @apply absolute bottom-[-5px] left-1/2 h-1 w-6 -translate-x-1/2 rounded-full bg-indigo-600;
     }
 
-    .entry-btn {
-      @apply mt-8 inline-flex items-center justify-center rounded-2xl px-6 py-4 text-sm font-black text-white shadow-lg shadow-indigo-200 transition-all active:scale-95;
+    /* Components */
+    .mode-card {
+      @apply flex cursor-pointer flex-col items-center rounded-[2.5rem] border-2 border-transparent bg-white/40 p-8 text-center transition-all duration-300;
+    }
+
+    .mode-card:hover {
+      @apply -translate-y-2 border-indigo-500/20 bg-white shadow-xl;
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-premium {
+      @apply bg-gradient-to-br from-indigo-500 to-pink-500 shadow-lg shadow-indigo-500/40 transition-all hover:-translate-y-0.5 hover:shadow-indigo-500/50;
+    }
+    
+    @keyframes pageIn {
+      from { opacity: 0; transform: translateY(20px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
     }
   </style>
 </head>
 
 <body>
-  <main class="main-card">
-    <div class="absolute -top-20 -right-20 w-df h-96 bg-indigo-300/20 rounded-full blur-3xl pointer-events-none"></div>
-    <div class="absolute -bottom-20 -left-20 w-96 h-96 bg-rose-300/20 rounded-full blur-3xl pointer-events-none"></div>
 
-    <header class="text-center relative z-10 mb-16">
-      <div class="mb-4 flex justify-end md:mb-0 md:absolute md:top-0 md:right-0">
-        <div id="user-box" class="hidden items-center gap-2">
-          <span id="user-name"
-            class="rounded-full bg-white/80 px-3 py-1 text-xs font-black text-slate-600 border border-slate-200"></span>
-          <button id="logout-btn"
-            class="rounded-xl bg-slate-200 px-3 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-300">
-            ログアウト
-          </button>
+  <div class="glass-container">
+    <!-- Navigation Bar -->
+    <nav class="flex items-center justify-between border-b border-white/20 bg-white/30 px-6 py-4 md:px-8 md:py-6">
+      <div class="flex items-center gap-3">
+        <div
+          class="flex h-11 w-11 rotate-3 items-center justify-center rounded-2xl bg-indigo-600 text-2xl text-white shadow-lg">
+          🚀
         </div>
-        <button id="login-btn"
-          class="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-black text-white shadow transition hover:bg-indigo-700">
-          ログイン / 登録
-        </button>
+        <h1 class="hidden text-2xl font-black tracking-tighter text-slate-800 md:block">STUDY LAUNCHER</h1>
+        <h1 class="block text-xl font-black tracking-tighter text-slate-800 md:hidden">STUDY</h1>
       </div>
 
-      <p
-        class="inline-block rounded-full bg-white/80 px-4 py-1 text-xs font-black uppercase tracking-[0.18em] text-indigo-500">
-        Study Launcher
-      </p>
-      <h1 class="mt-4 text-3xl md:text-5xl font-black tracking-tight">学習モードを選んでスタート</h1>
-      <p class="mt-4 text-sm md:text-base font-bold text-slate-500">
-        目的に合わせて 1クリック。AIで問題を生成して解く・成績分析・弱点克服へすぐ移動できます。
-      </p>
-    </header>
+      <div class="hidden items-center gap-4 md:flex">
+        <a href="/study/index.html" class="nav-link active">ホーム</a>
+        <a href="/study/requirements.html" class="nav-link">AI生成</a>
+        <a href="/study/stats.html" class="nav-link">成績分析</a>
+        <a href="/study/review.html" class="nav-link">弱点克服</a>
+      </div>
 
-    <section class="mt-10 grid grid-cols-1 gap-4 md:grid-cols-3">
-      <article class="entry-card">
-        <div>
-          <span class="entry-tag bg-indigo-100 text-indigo-700">Generate</span>
-          <h2 class="mt-4 text-2xl font-black">AIで問題を生成して解く</h2>
-          <p class="mt-3 text-sm font-bold text-slate-500">
-            ジャンルや難易度を選んで、新しい問題セットを作成します。
+      <div class="flex items-center gap-4">
+        <!-- Logged In State -->
+        <div id="user-box" class="hidden items-center gap-3">
+          <div class="hidden text-right sm:block">
+            <p class="text-[10px] font-black uppercase leading-none text-slate-400">Welcome</p>
+            <p id="user-name" class="mt-1 text-xs font-bold leading-none text-slate-600">User</p>
+          </div>
+          <div
+            class="h-10 w-10 overflow-hidden rounded-full border-2 border-white bg-indigo-100 shadow-sm relative group cursor-pointer"
+            id="logout-btn" title="ログアウト">
+            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="avatar">
+            <div
+              class="absolute inset-0 bg-black/30 hidden group-hover:flex items-center justify-center text-[10px] text-white font-bold">
+              OUT</div>
+          </div>
+        </div>
+        <!-- Logged Out State -->
+        <button id="login-btn"
+          class="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-black text-white shadow transition hover:bg-indigo-700">
+          ログイン
+        </button>
+      </div>
+    </nav>
+
+    <!-- Content Area -->
+    <main class="flex-grow p-4 md:p-8">
+      <!-- PAGE: HOME -->
+      <div id="p-home" class="active block animate-[pageIn_0.5s_ease-out]">
+        <div class="mx-auto mb-12 max-w-2xl text-center">
+          <span
+            class="rounded-full bg-white/50 px-4 py-1 text-[10px] font-black uppercase tracking-widest text-indigo-600 shadow-sm">
+            Welcome Back!
+          </span>
+          <h2 class="mb-4 mt-4 text-3xl font-black tracking-tight text-slate-800 md:text-5xl">何を学びますか？</h2>
+          <p class="font-medium leading-relaxed text-slate-500">
+            AIがあなたの学習データに基づき、最適なカリキュラムを提案します。まずはモードを選択してください。
           </p>
         </div>
-        <a href="/study/requirements.html?entry=generate" class="entry-btn bg-indigo-600 hover:bg-indigo-700">
-          このモードで始める
-        </a>
-      </article>
 
-      <article class="entry-card">
-        <div>
-          <span class="entry-tag bg-emerald-100 text-emerald-700">Stats</span>
-          <h2 class="mt-4 text-2xl font-black">成績分析</h2>
-          <p class="mt-3 text-sm font-bold text-slate-500">
-            正答率を確認して、苦手ジャンルを把握します。
-          </p>
+        <div class="grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-8">
+          <!-- Card 1 -->
+          <a href="/study/requirements.html" class="block">
+            <div class="mode-card">
+              <div
+                class="mb-6 flex h-20 w-20 items-center justify-center rounded-[2rem] bg-indigo-100 text-4xl shadow-inner">
+                🪄
+              </div>
+              <h3 class="mb-2 text-xl font-black text-slate-800">AI問題生成</h3>
+              <p class="mb-8 text-sm font-medium text-slate-500">要件を入力して、あなた専用の問題集を作成します。</p>
+              <span
+                class="mt-auto rounded-full bg-indigo-600 px-6 py-2 text-xs font-black text-white shadow-lg">START</span>
+            </div>
+          </a>
+          <!-- Card 2 -->
+          <a href="/study/stats.html" class="block">
+            <div class="mode-card">
+              <div
+                class="mb-6 flex h-20 w-20 items-center justify-center rounded-[2rem] bg-emerald-100 text-4xl shadow-inner">
+                📊
+              </div>
+              <h3 class="mb-2 text-xl font-black text-slate-800">成績分析</h3>
+              <p class="mb-8 text-sm font-medium text-slate-500">現在の実力を可視化し、次のステップを明確にします。</p>
+              <span
+                class="mt-auto rounded-full bg-emerald-500 px-6 py-2 text-xs font-black text-white shadow-lg">CHECK</span>
+            </div>
+          </a>
+          <!-- Card 3 -->
+          <a href="/study/review.html" class="block">
+            <div class="mode-card">
+              <div
+                class="mb-6 flex h-20 w-20 items-center justify-center rounded-[2rem] bg-rose-100 text-4xl shadow-inner">
+                🔥
+              </div>
+              <h3 class="mb-2 text-xl font-black text-slate-800">弱点克服</h3>
+              <p class="mb-8 text-sm font-medium text-slate-500">間違えた問題を集中的に解き、苦手をゼロにします。</p>
+              <span
+                class="mt-auto rounded-full bg-rose-500 px-6 py-2 text-xs font-black text-white shadow-lg">REVIEW</span>
+            </div>
+          </a>
         </div>
-        <a id="stats-link" href="/study/stats.html" class="entry-btn bg-emerald-600 hover:bg-emerald-700">
-          分析を開く
-        </a>
-      </article>
+      </div>
+    </main>
 
-      <article class="entry-card">
-        <div>
-          <span class="entry-tag bg-rose-100 text-rose-700">Review</span>
-          <h2 class="mt-4 text-2xl font-black">弱点克服モード</h2>
-          <p class="mt-3 text-sm font-bold text-slate-500">
-            間違えた問題を中心に復習して、短時間で苦手を潰します。
-          </p>
-        </div>
-        <a id="review-link" href="/study/review.html" class="entry-btn bg-rose-600 hover:bg-rose-700">
-          復習を始める
-        </a>
-      </article>
-    </section>
+    <!-- Footer Status Bar -->
+    <footer class="flex items-center justify-between border-t border-white/20 bg-white/20 px-6 py-4 md:px-8">
+      <div class="flex gap-4">
+        <span class="text-[10px] font-black uppercase tracking-widest text-indigo-500">System Status: Optimal</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="h-2 w-2 animate-pulse rounded-full bg-emerald-500"></span>
+        <span class="text-[10px] font-black uppercase text-slate-400">AI Connected</span>
+      </div>
+    </footer>
+  </div>
 
-    <p class="mt-8 text-center text-xs md:text-sm font-bold text-slate-500">
-      成績分析・弱点克服モードはログイン状態で利用できます。
-    </p>
-    </section>
-
-    <div id="auth-modal" class="fixed inset-0 z-50 hidden">
-      <div class="absolute inset-0 bg-slate-900/45 backdrop-blur-sm"></div>
-      <div class="absolute left-1/2 top-1/2 w-full max-w-md -translate-x-1/2 -translate-y-1/2 p-4">
-        <div class="rounded-3xl bg-white p-6 shadow-2xl">
-          <h2 class="text-xl font-black text-slate-800">ログイン / 登録</h2>
-          <p class="mt-1 text-xs font-bold text-slate-500">ホームで認証してから各モードを開始できます。</p>
-          <form id="auth-form" class="mt-5 space-y-3">
-            <input id="auth-user" type="text" required placeholder="ユーザー名"
-              class="w-full rounded-xl border border-slate-200 px-3 py-2 font-bold text-slate-700 outline-none focus:border-indigo-400">
-            <input id="auth-pass" type="password" required placeholder="パスワード"
-              class="w-full rounded-xl border border-slate-200 px-3 py-2 font-bold text-slate-700 outline-none focus:border-indigo-400">
-            <div class="flex gap-2">
+  <div id="auth-modal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-slate-900/45 backdrop-blur-sm"></div>
+    <div class="absolute left-1/2 top-1/2 w-full max-w-md -translate-x-1/2 -translate-y-1/2 p-4">
+      <div class="rounded-[2rem] bg-white p-8 shadow-2xl">
+        <h2 class="text-2xl font-black text-slate-800">ログイン / 登録</h2>
+        <p class="mt-2 text-xs font-bold text-slate-500">アカウント作成して学習データを保存しよう。</p>
+        <form id="auth-form" class="mt-6 space-y-4">
+          <input id="auth-user" type="text" required placeholder="ユーザー名"
+            class="w-full rounded-xl border-2 border-slate-100 bg-slate-50 px-4 py-3 font-bold text-slate-700 outline-none transition focus:border-indigo-400 focus:bg-white">
+          <input id="auth-pass" type="password" required placeholder="パスワード"
+            class="w-full rounded-xl border-2 border-slate-100 bg-slate-50 px-4 py-3 font-bold text-slate-700 outline-none transition focus:border-indigo-400 focus:bg-white">
+          <div class="flex gap-3 pt-2">
+            <div class="flex-1">
               <button type="submit" name="action" value="login"
-                class="flex-1 rounded-xl bg-indigo-600 py-2 text-sm font-black text-white hover:bg-indigo-700">
+                class="w-full rounded-xl bg-indigo-600 py-3 text-sm font-black text-white transition hover:bg-indigo-700 hover:shadow-lg">
                 ログイン
               </button>
+            </div>
+            <div class="flex-1">
               <button type="submit" name="action" value="register"
-                class="flex-1 rounded-xl bg-slate-100 py-2 text-sm font-black text-slate-700 hover:bg-slate-200">
+                class="w-full rounded-xl bg-slate-100 py-3 text-sm font-black text-slate-600 transition hover:bg-slate-200">
                 新規登録
               </button>
             </div>
-          </form>
-          <div id="auth-msg" class="mt-3 min-h-[1.25rem] text-xs font-bold text-rose-500"></div>
-          <button id="close-auth"
-            class="mt-2 inline-flex rounded-lg border border-slate-200 px-3 py-1 text-xs font-black text-slate-500 hover:bg-slate-50">
-            閉じる
-          </button>
-        </div>
+          </div>
+        </form>
+        <div id="auth-msg" class="mt-4 min-h-[1.25rem] text-center text-xs font-bold text-rose-500"></div>
+        <button id="close-auth"
+          class="mt-2 w-full rounded-lg border border-slate-200 py-2 text-xs font-black text-slate-400 hover:bg-slate-50">
+          閉じる
+        </button>
       </div>
     </div>
-  </main>
+  </div>
 
   <script>
     const loginBtn = document.getElementById('login-btn');
@@ -174,8 +237,6 @@
     const closeAuthBtn = document.getElementById('close-auth');
     const authForm = document.getElementById('auth-form');
     const authMsg = document.getElementById('auth-msg');
-    const statsLink = document.getElementById('stats-link');
-    const reviewLink = document.getElementById('review-link');
 
     let currentUser = null;
 
@@ -191,7 +252,7 @@
 
     const updateAuthUI = () => {
       if (currentUser) {
-        userName.textContent = `ログイン中: ${currentUser.name}`;
+        userName.textContent = currentUser.name;
         userBox.classList.remove('hidden');
         userBox.classList.add('flex');
         loginBtn.classList.add('hidden');
@@ -254,19 +315,14 @@
       }
     });
 
-    logoutBtn.addEventListener('click', async () => {
-      await fetch('/index.php?r=/logout');
-      currentUser = null;
-      updateAuthUI();
-    });
-
-    [statsLink, reviewLink].forEach((link) => {
-      link?.addEventListener('click', (e) => {
-        if (currentUser) return;
-        e.preventDefault();
-        openAuthModal('先にホームでログインしてください。');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', async () => {
+        if (!confirm('ログアウトしますか？')) return;
+        await fetch('/index.php?r=/logout');
+        currentUser = null;
+        updateAuthUI();
       });
-    });
+    }
 
     loginBtn.addEventListener('click', () => openAuthModal());
     closeAuthBtn.addEventListener('click', closeAuthModal);

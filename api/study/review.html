@@ -4,19 +4,24 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>弱点克服モード</title>
+  <title>弱点克服 | STUDY LAUNCHER</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap"
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800;900&display=swap"
     rel="stylesheet">
   <style type="text/tailwindcss">
     :root {
+      --primary: #6366f1;
+      --secondary: #ec4899;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
       --bg-gradient: linear-gradient(135deg, #fef9c3 0%, #d8b4fe 50%, #818cf8 100%);
     }
 
     body {
-      @apply min-h-screen flex items-center justify-center p-4 md:p-6 text-slate-800;
+      @apply min-h-screen flex items-center justify-center p-4 md:p-6 text-slate-800 overflow-x-hidden;
       font-family: "M PLUS Rounded 1c", sans-serif;
       background: var(--bg-gradient);
       background-size: 400% 400%;
@@ -29,105 +34,187 @@
       100% { background-position: 0% 50%; }
     }
 
-    .main-card {
-      @apply rounded-[48px] border border-white/40 max-w-6xl w-full p-8 md:p-16 relative overflow-hidden;
-      background: rgba(255, 255, 255, 0.6);
-      -webkit-backdrop-filter: blur(20px);
-      backdrop-filter: blur(20px);
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1), inset 0 0 20px rgba(255, 255, 255, 0.5);
+    /* Shell Components */
+    .glass-container {
+      @apply w-full max-w-[1100px] flex flex-col overflow-hidden rounded-[3rem] border border-white/40 bg-white/60 shadow-2xl;
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+      min-height: 80vh;
+    }
+
+    .nav-link {
+      @apply relative px-4 py-2 font-black text-slate-500 transition-all hover:text-indigo-600;
+    }
+
+    .nav-link.active {
+      @apply text-indigo-600;
+    }
+
+    .nav-link.active::after {
+      content: '';
+      @apply absolute bottom-[-5px] left-1/2 h-1 w-6 -translate-x-1/2 rounded-full bg-indigo-600;
+    }
+
+    /* Components */
+    .answer-btn {
+      @apply flex items-center justify-center rounded-2xl border-2 border-transparent bg-white/50 text-slate-600 font-black transition-all duration-300;
+    }
+    
+    .answer-btn:hover {
+      @apply bg-white border-indigo-100 shadow-lg text-indigo-600 -translate-y-1;
     }
 
     .answer-btn.selected {
-      @apply border-rose-600 bg-rose-600 text-white shadow-lg shadow-rose-200 transform scale-[1.02];
+      @apply border-rose-500 bg-rose-500 text-white shadow-xl shadow-rose-200 transform scale-[1.02];
+    }
+
+    @keyframes pageIn {
+      from { opacity: 0; transform: translateY(20px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
     }
   </style>
 </head>
 
 <body>
-  <main class="main-card">
-    <div class="absolute -top-20 -right-20 w-df h-96 bg-rose-300/20 rounded-full blur-3xl pointer-events-none"></div>
-    <div class="absolute -bottom-20 -left-20 w-96 h-96 bg-orange-300/20 rounded-full blur-3xl pointer-events-none">
-    </div>
 
-    <header class="flex flex-wrap items-center justify-between gap-3 relative z-10">
-      <div>
-        <p
-          class="inline-block rounded-full bg-white/50 border border-white/60 px-4 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-rose-600 shadow-sm backdrop-blur-md">
-          Review Mode
-        </p>
-        <h1 class="mt-4 text-3xl md:text-5xl font-black tracking-tight text-slate-800">弱点克服モード</h1>
-        <p class="mt-3 text-sm font-bold text-slate-500">このページだけで復習と回答送信まで完結します。</p>
+  <div class="glass-container">
+    <!-- Navigation Bar -->
+    <nav class="flex items-center justify-between border-b border-white/20 bg-white/30 px-6 py-4 md:px-8 md:py-6">
+      <div class="flex items-center gap-3">
+        <div
+          class="flex h-11 w-11 rotate-3 items-center justify-center rounded-2xl bg-indigo-600 text-2xl text-white shadow-lg">
+          🚀
+        </div>
+        <h1 class="hidden text-2xl font-black tracking-tighter text-slate-800 md:block">STUDY LAUNCHER</h1>
+        <h1 class="block text-xl font-black tracking-tighter text-slate-800 md:hidden">STUDY</h1>
       </div>
-      <div class="flex flex-wrap gap-3">
-        <a href="/study/index.html"
-          class="inline-flex items-center rounded-2xl border border-white/60 bg-white/40 px-5 py-3 text-sm font-black text-slate-700 shadow-sm backdrop-blur-md transition hover:bg-white hover:text-indigo-600 hover:shadow-md hover:-translate-y-0.5">
-          ホーム
-        </a>
-        <a href="/study/stats.html"
-          class="inline-flex items-center rounded-2xl border border-white/60 bg-white/40 px-5 py-3 text-sm font-black text-emerald-700 shadow-sm backdrop-blur-md transition hover:bg-white hover:text-emerald-700 hover:shadow-md hover:-translate-y-0.5">
-          成績分析へ
-        </a>
+
+      <div class="hidden items-center gap-4 md:flex">
+        <a href="/study/index.html" class="nav-link">ホーム</a>
+        <a href="/study/requirements.html" class="nav-link">AI生成</a>
+        <a href="/study/stats.html" class="nav-link">成績分析</a>
+        <a href="/study/review.html" class="nav-link active">弱点克服</a>
       </div>
-    </header>
 
-    <div class="mt-10 flex flex-wrap items-center gap-3 relative z-10">
-      <span id="user-name"
-        class="hidden rounded-full bg-rose-100/80 px-4 py-1.5 text-sm font-black text-rose-700 border border-rose-200"></span>
-      <button id="open-auth"
-        class="inline-flex items-center rounded-xl bg-rose-500 px-6 py-3 text-sm font-black text-white shadow-lg shadow-rose-200 transition hover:bg-rose-600 hover:-translate-y-0.5">
-        ログインして復習
-      </button>
-      <button id="load-weak-five"
-        class="hidden inline-flex items-center rounded-xl border-2 border-rose-100 bg-white/50 px-4 py-2 text-sm font-black text-rose-600 transition hover:bg-rose-50 hover:border-rose-300">
-        苦手5問を表示
-      </button>
-      <button id="next-weak-five"
-        class="hidden inline-flex items-center rounded-xl bg-orange-500 px-5 py-2 text-sm font-black text-white shadow-lg shadow-orange-200 transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
-        disabled>
-        次の5問へ
-      </button>
-      <button id="reveal-all-answers"
-        class="hidden inline-flex items-center rounded-xl border-2 border-rose-200 bg-white/80 px-4 py-2 text-sm font-black text-rose-600 transition hover:bg-white hover:border-rose-400 disabled:cursor-not-allowed disabled:opacity-60"
-        disabled>
-        全問の正解と解説を表示
-      </button>
-      <span id="score-summary"
-        class="hidden rounded-full border border-rose-200 bg-white/80 px-4 py-1.5 text-xs font-black text-rose-700 shadow-sm"></span>
-      <span id="domain-filter"
-        class="hidden rounded-full border border-rose-200 bg-white/80 px-4 py-1.5 text-xs font-black text-rose-700 shadow-sm"></span>
-    </div>
+      <div class="flex items-center gap-4">
+        <!-- Logged In State -->
+        <div id="user-box" class="hidden items-center gap-3">
+          <div class="hidden text-right sm:block">
+            <p class="text-[10px] font-black uppercase leading-none text-slate-400">Welcome</p>
+            <p id="user-name" class="mt-1 text-xs font-bold leading-none text-slate-600">User</p>
+          </div>
+          <div
+            class="h-10 w-10 overflow-hidden rounded-full border-2 border-white bg-indigo-100 shadow-sm relative group cursor-pointer"
+            id="logout-btn" title="ログアウト">
+            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="avatar">
+            <div
+              class="absolute inset-0 bg-black/30 hidden group-hover:flex items-center justify-center text-[10px] text-white font-bold">
+              OUT</div>
+          </div>
+        </div>
+        <!-- Logged Out State -->
+        <button id="login-btn"
+          class="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-black text-white shadow transition hover:bg-indigo-700">
+          ログイン
+        </button>
+      </div>
+    </nav>
 
-    <div id="status" class="mt-6 text-sm font-bold text-slate-400 animate-pulse relative z-10">読み込み中...</div>
+    <!-- Content Area -->
+    <main class="flex-grow p-4 md:p-8">
+      <div id="p-review" class="active block animate-[pageIn_0.5s_ease-out]">
 
-    <section id="question-wrap" class="mt-8 hidden space-y-6 relative z-10"></section>
-    </section>
-  </main>
+        <!-- Header Section -->
+        <div
+          class="bg-white/40 p-8 md:p-12 rounded-[3rem] text-center border border-white/50 mb-8 relative overflow-hidden"
+          id="review-hero">
+          <div class="absolute top-0 right-0 w-64 h-64 bg-rose-200/30 rounded-full blur-3xl pointer-events-none"></div>
+          <div class="absolute bottom-0 left-0 w-64 h-64 bg-orange-200/30 rounded-full blur-3xl pointer-events-none">
+          </div>
 
+          <div class="relative z-10">
+            <div
+              class="w-24 h-24 bg-rose-100 text-rose-500 rounded-[2.5rem] flex items-center justify-center text-5xl mx-auto mb-6 shadow-inner rotate-3">
+              🔥
+            </div>
+            <h2 class="text-3xl md:text-4xl font-black text-slate-800 mb-4 tracking-tight">弱点克服モード</h2>
+            <p class="text-slate-500 max-w-lg mx-auto mb-8 font-medium">
+              過去のミスデータをAIがスキャン。正答率の低い問題から優先的に再トレーニングを行います。
+            </p>
+
+            <!-- Action Buttons Area -->
+            <div class="flex flex-wrap items-center justify-center gap-4">
+              <button id="load-weak-five"
+                class="px-8 py-4 bg-rose-500 rounded-2xl font-black text-white shadow-xl shadow-rose-200 hover:scale-105 transition-all border-b-4 border-rose-700 active:border-b-0 active:translate-y-1">
+                復習を開始 (5問)
+              </button>
+              <!-- Additional buttons hidden by default, shown by JS -->
+              <button id="next-weak-five"
+                class="hidden px-8 py-4 bg-orange-500 rounded-2xl font-black text-white shadow-xl shadow-orange-200 hover:scale-105 transition-all border-b-4 border-orange-700 active:border-b-0 active:translate-y-1">
+                次の5問へ
+              </button>
+              <button id="reveal-all-answers"
+                class="hidden px-6 py-4 bg-white rounded-2xl font-black text-rose-600 shadow-sm hover:bg-rose-50 transition-all border border-rose-100">
+                全回答を表示
+              </button>
+            </div>
+
+            <div class="mt-6 flex flex-wrap justify-center gap-2">
+              <span id="domain-filter"
+                class="hidden px-4 py-1 bg-white/60 rounded-full text-xs font-black text-rose-500 border border-rose-100"></span>
+              <span id="score-summary"
+                class="hidden px-4 py-1 bg-white/60 rounded-full text-xs font-black text-rose-500 border border-rose-100"></span>
+            </div>
+          </div>
+        </div>
+
+        <div id="status" class="mt-4 text-center text-sm font-bold text-slate-400"></div>
+
+        <section id="question-wrap" class="hidden space-y-6 max-w-4xl mx-auto">
+          <!-- Questions injected here -->
+        </section>
+      </div>
+    </main>
+
+    <!-- Footer Status Bar -->
+    <footer class="flex items-center justify-between border-t border-white/20 bg-white/20 px-6 py-4 md:px-8">
+      <div class="flex gap-4">
+        <span class="text-[10px] font-black uppercase tracking-widest text-indigo-500">System Status: Optimal</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="h-2 w-2 animate-pulse rounded-full bg-emerald-500"></span>
+        <span class="text-[10px] font-black uppercase text-slate-400">AI Connected</span>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Auth Modal -->
   <div id="auth-modal" class="fixed inset-0 z-50 hidden">
     <div class="absolute inset-0 bg-slate-900/45 backdrop-blur-sm"></div>
     <div class="absolute left-1/2 top-1/2 w-full max-w-md -translate-x-1/2 -translate-y-1/2 p-4">
-      <div class="rounded-3xl bg-white p-6 shadow-2xl">
-        <h2 class="text-xl font-black text-slate-800">ログイン</h2>
-        <p class="mt-1 text-xs font-bold text-slate-500">弱点克服モードにはログインが必要です。</p>
-        <form id="auth-form" class="mt-5 space-y-3">
+      <div class="rounded-[2rem] bg-white p-8 shadow-2xl">
+        <h2 class="text-2xl font-black text-slate-800">ログイン / 登録</h2>
+        <p class="mt-2 text-xs font-bold text-slate-500">弱点克服モードを利用するにはログインが必要です。</p>
+        <form id="auth-form" class="mt-6 space-y-4">
           <input id="auth-user" type="text" required placeholder="ユーザー名"
-            class="w-full rounded-xl border border-slate-200 px-3 py-2 font-bold text-slate-700 outline-none focus:border-rose-400">
+            class="w-full rounded-xl border-2 border-slate-100 bg-slate-50 px-4 py-3 font-bold text-slate-700 outline-none transition focus:border-indigo-400 focus:bg-white">
           <input id="auth-pass" type="password" required placeholder="パスワード"
-            class="w-full rounded-xl border border-slate-200 px-3 py-2 font-bold text-slate-700 outline-none focus:border-rose-400">
-          <div class="flex gap-2">
+            class="w-full rounded-xl border-2 border-slate-100 bg-slate-50 px-4 py-3 font-bold text-slate-700 outline-none transition focus:border-indigo-400 focus:bg-white">
+          <div class="flex gap-3 pt-2">
             <button type="submit" name="action" value="login"
-              class="flex-1 rounded-xl bg-rose-600 py-2 text-sm font-black text-white hover:bg-rose-700">
+              class="flex-1 rounded-xl bg-indigo-600 py-3 text-sm font-black text-white transition hover:bg-indigo-700 hover:shadow-lg">
               ログイン
             </button>
             <button type="submit" name="action" value="register"
-              class="flex-1 rounded-xl bg-slate-100 py-2 text-sm font-black text-slate-700 hover:bg-slate-200">
+              class="flex-1 rounded-xl bg-slate-100 py-3 text-sm font-black text-slate-600 transition hover:bg-slate-200">
               新規登録
             </button>
           </div>
         </form>
-        <div id="auth-msg" class="mt-3 min-h-[1.25rem] text-xs font-bold text-rose-500"></div>
+        <div id="auth-msg" class="mt-4 min-h-[1.25rem] text-center text-xs font-bold text-rose-500"></div>
         <button id="close-auth"
-          class="mt-2 inline-flex rounded-lg border border-slate-200 px-3 py-1 text-xs font-black text-slate-500 hover:bg-slate-50">
+          class="mt-2 w-full rounded-lg border border-slate-200 py-2 text-xs font-black text-slate-400 hover:bg-slate-50">
           閉じる
         </button>
       </div>
@@ -137,11 +224,17 @@
   <script>
     const statusEl = document.getElementById('status');
     const questionWrapEl = document.getElementById('question-wrap');
+    const reviewHero = document.getElementById('review-hero');
+
     const userNameEl = document.getElementById('user-name');
-    const openAuthBtn = document.getElementById('open-auth');
+    const userBox = document.getElementById('user-box');
+    const loginBtn = document.getElementById('login-btn');
+    const logoutBtn = document.getElementById('logout-btn');
+
     const loadWeakFiveBtn = document.getElementById('load-weak-five');
     const nextWeakFiveBtn = document.getElementById('next-weak-five');
     const revealAllAnswersBtn = document.getElementById('reveal-all-answers');
+
     const scoreSummaryEl = document.getElementById('score-summary');
     const authModal = document.getElementById('auth-modal');
     const closeAuthBtn = document.getElementById('close-auth');
@@ -173,13 +266,16 @@
 
     const updateHeader = () => {
       if (currentUser) {
-        userNameEl.textContent = `ログイン中: ${currentUser.name}`;
-        userNameEl.classList.remove('hidden');
-        openAuthBtn.classList.add('hidden');
+        userNameEl.textContent = currentUser.name;
+        userBox.classList.remove('hidden');
+        userBox.classList.add('flex');
+        loginBtn.classList.add('hidden');
+        // Hero logic for buttons
         loadWeakFiveBtn.classList.remove('hidden');
       } else {
-        userNameEl.classList.add('hidden');
-        openAuthBtn.classList.remove('hidden');
+        userBox.classList.add('hidden');
+        userBox.classList.remove('flex');
+        loginBtn.classList.remove('hidden');
         loadWeakFiveBtn.classList.add('hidden');
       }
       updateNextWeakFiveButton();
@@ -221,6 +317,8 @@
         scoreSummaryEl.textContent = '';
         scoreSummaryEl.classList.add('hidden');
       }
+      // Re-show initial hero buttons if resetting
+      if (currentUser) loadWeakFiveBtn.classList.remove('hidden');
     };
 
     const updateNextWeakFiveButton = () => {
@@ -232,8 +330,12 @@
       nextWeakFiveBtn.disabled = !canProceed;
       if (canProceed) {
         nextWeakFiveBtn.classList.remove('hidden');
-      } else {
+        // Hide load btn to focus on flow
+        loadWeakFiveBtn.classList.add('hidden');
+      } else if (isWeakBatchMode) {
+        // In mode but not finished
         nextWeakFiveBtn.classList.add('hidden');
+        loadWeakFiveBtn.classList.add('hidden');
       }
     };
 
@@ -277,7 +379,6 @@
           body: JSON.stringify([{ question_id: questionId, selected_label: selectedLabel, elapsed_ms: null }]),
         });
       } catch (_) {
-        // ignore save failures here to keep answering flow smooth
       }
     };
 
@@ -296,55 +397,64 @@
         }
         updateNextWeakFiveButton();
         questionWrapEl.classList.add('hidden');
-        setStatus('復習対象の問題はありません。', 'text-emerald-700');
+        setStatus('復習対象の問題はありません。ナイス！', 'text-emerald-600');
+        // Show Hero again nicely
+        reviewHero.classList.remove('hidden');
         return;
       }
 
-      currentBatchIds = list
-        .map((q) => Number(q.question_id))
-        .filter((qid) => Number.isFinite(qid));
+      // Hide Hero slightly to focus on questions, or keep it?
+      // Let's keep hero but maybe collapse it? No, keep simple.
+      // Actually, user wants "Shell" design.
+
+      currentBatchIds = list.map((q) => Number(q.question_id)).filter((qid) => Number.isFinite(qid));
       answeredBatchIds = new Set();
       updateNextWeakFiveButton();
 
       questionWrapEl.innerHTML = list.map((q, idx) => {
         const choices = (q.choices || []).map((c) => `
-          <button type="button" class="answer-btn w-12 h-12 rounded-xl border-2 border-slate-200 bg-white text-slate-600 font-black transition"
+          <button type="button" class="answer-btn w-14 h-14 md:w-16 md:h-16 text-lg"
             data-qid="${q.question_id}" data-label="${c.choice_label}">
             ${c.choice_label}
           </button>
         `).join('');
 
         const lines = (q.choices || []).map((c) => `
-          <div class="flex gap-2 text-sm">
-            <span class="w-5 font-black text-rose-500">${c.choice_label}.</span>
+          <div class="flex gap-3 text-sm p-3 bg-white/50 rounded-xl border border-white/60">
+            <span class="w-6 font-black text-rose-500 flex-shrink-0">${c.choice_label}.</span>
             <span class="font-bold text-slate-700">${c.choice_text}</span>
           </div>
         `).join('');
 
         return `
-          <article class="rounded-2xl border border-rose-200 bg-white/80 p-5 shadow-sm">
-            <div class="mb-3 flex items-center justify-between gap-3">
-              <h2 class="text-lg font-black text-slate-800">#${idx + 1} ${q.title || 'Question'}</h2>
-              <span class="rounded-full bg-rose-100 px-3 py-1 text-xs font-black text-rose-700">${q.domain_name || ''} / ${q.topic_name || ''}</span>
+          <article class="rounded-[2.5rem] border border-white/60 bg-white/40 p-6 md:p-8 shadow-sm transition-all hover:bg-white/60">
+            <div class="mb-4 flex items-center justify-between gap-3 border-b border-indigo-100 pb-4">
+              <h2 class="text-lg font-black text-slate-800">Q${idx + 1}. ${q.title || 'Question'}</h2>
+              <span class="rounded-full bg-indigo-100 px-3 py-1 text-xs font-black text-indigo-600">${q.domain_name || ''}</span>
             </div>
-            <p class="rounded-xl bg-rose-50/60 p-4 text-sm font-bold text-slate-700">${q.stem || ''}</p>
-            <div class="mt-4 space-y-2">${lines}</div>
-            <div class="mt-4 flex flex-wrap items-center gap-2" data-row="${q.question_id}">
-              ${choices}
+            <p class="mb-6 rounded-2xl bg-white/50 p-5 text-sm font-bold text-slate-700 leading-relaxed border border-white/60">${q.stem || ''}</p>
+            
+            <div class="space-y-2 mb-6">${lines}</div>
+            
+            <div class="flex flex-wrap items-center justify-between gap-4" data-row="${q.question_id}">
+              <div class="flex gap-3">
+                  ${choices}
+              </div>
               <button type="button"
-                class="ml-auto rounded-xl border border-rose-200 bg-white px-4 py-2 text-xs font-black text-rose-700 hover:bg-rose-50"
+                class="ml-auto rounded-xl border-2 border-slate-200 bg-white px-5 py-2.5 text-xs font-black text-slate-500 transition hover:border-rose-200 hover:text-rose-500"
                 data-check="${q.question_id}" data-correct="${q.correct_label || ''}" data-expl="${encodeURIComponent((q.explanation || '').toString())}">
-                正解を表示
+                答え合わせ
               </button>
             </div>
-            <div class="mt-3 text-sm font-bold" data-status="${q.question_id}"></div>
-            <div class="mt-2 hidden rounded-xl border-l-4 border-rose-500 bg-white p-3 text-sm font-bold text-slate-600" data-expl="${q.question_id}"></div>
+            
+            <div class="mt-4 text-sm font-black" data-status="${q.question_id}"></div>
+            <div class="mt-4 hidden rounded-2xl border-l-8 border-rose-500 bg-white p-5 text-sm font-medium text-slate-600 shadow-sm" data-expl="${q.question_id}"></div>
           </article>
         `;
       }).join('');
 
       questionWrapEl.classList.remove('hidden');
-      setStatus(`復習問題 ${list.length} 件を表示中`, 'text-rose-700');
+      setStatus(`Training Session: ${list.length} Questions`, 'text-indigo-400');
 
       currentQuestionStates = [];
 
@@ -354,9 +464,8 @@
         const correctCount = currentQuestionStates.filter((s) => s.revealed && s.isCorrect).length;
         const judged = currentQuestionStates.filter((s) => s.revealed).length;
         scoreSummaryEl.textContent = finalized
-          ? `正解 ${correctCount} / ${total}`
-          : `正解 ${correctCount} / ${total}（判定済み ${judged}問）`;
-        scoreSummaryEl.className = 'rounded-full border border-rose-200 bg-white/80 px-3 py-1 text-xs font-black text-rose-700';
+          ? `Result: ${correctCount} / ${total} Correct`
+          : `Score: ${correctCount} / ${total}`;
         scoreSummaryEl.classList.remove('hidden');
       };
 
@@ -365,18 +474,18 @@
         const total = currentQuestionStates.length;
         const selectedCount = currentQuestionStates.filter((s) => !!s.selected).length;
         revealAllAnswersBtn.disabled = !(total > 0 && selectedCount === total);
+        revealAllAnswersBtn.classList.remove('hidden'); // Ensure visible
       };
 
       const revealOne = async (state, allowUnanswered = false) => {
         if (!state.selected) {
           if (!allowUnanswered) {
-            state.status.textContent = '先に回答を選択してください。';
-            state.status.className = 'mt-3 text-sm font-bold text-rose-600';
+            state.status.textContent = '選択肢を選んでください。';
+            state.status.className = 'mt-4 animate-bounce text-rose-500 font-extrabold';
             return false;
           }
-          state.status.textContent = `未回答 / 正解: ${state.correct || '-'}`;
-          state.status.className = 'mt-3 text-sm font-bold text-rose-600';
-          state.expl.innerHTML = `<span class="block font-black mb-1">解説</span>${state.explText.replace(/\\n/g, '<br>')}`;
+          state.status.textContent = `未回答 (正解: ${state.correct})`;
+          state.expl.innerHTML = `<h4 class="font-black text-rose-500 mb-2">解説</h4>${state.explText.replace(/\\n/g, '<br>')}`;
           state.expl.classList.remove('hidden');
           state.revealed = true;
           state.isCorrect = false;
@@ -385,11 +494,11 @@
 
         await state.persistSelection();
         const ok = state.selected === state.correct;
-        state.status.textContent = ok ? `正解 (${state.correct})` : `不正解 / 正解: ${state.correct}`;
+        state.status.textContent = ok ? `正解！ (${state.correct})` : `残念... 正解は ${state.correct}`;
         state.status.className = ok
-          ? 'mt-3 text-sm font-bold text-emerald-700'
-          : 'mt-3 text-sm font-bold text-rose-600';
-        state.expl.innerHTML = `<span class="block font-black mb-1">解説</span>${state.explText.replace(/\\n/g, '<br>')}`;
+          ? 'mt-4 text-emerald-500 font-extrabold text-lg'
+          : 'mt-4 text-rose-500 font-extrabold text-lg';
+        state.expl.innerHTML = `<h4 class="font-black text-slate-700 mb-2">解説</h4>${state.explText.replace(/\\n/g, '<br>')}`;
         state.expl.classList.remove('hidden');
         state.revealed = true;
         state.isCorrect = ok;
@@ -438,8 +547,8 @@
             state.selected = btn.getAttribute('data-label') || '';
             answeredBatchIds.add(Number(qid));
             updateNextWeakFiveButton();
-            state.status.textContent = `選択: ${state.selected}`;
-            state.status.className = 'mt-3 text-sm font-bold text-slate-500';
+            // state.status.textContent = `選択: ${state.selected}`;
+            // state.status.className = 'mt-3 text-sm font-bold text-slate-500';
             state.persistSelection().catch(() => { });
             updateRevealAllState();
           });
@@ -448,11 +557,11 @@
         checkBtn?.addEventListener('click', async () => {
           await revealOne(state, false);
           updateScoreSummary(false);
+          checkBtn.style.display = 'none'; // Hide check button after verifying
         });
       });
 
       if (revealAllAnswersBtn) {
-        revealAllAnswersBtn.disabled = true;
         revealAllAnswersBtn.classList.remove('hidden');
         revealAllAnswersBtn.onclick = async () => {
           if (revealAllAnswersBtn.disabled) return;
@@ -460,58 +569,49 @@
           try {
             await Promise.all(currentQuestionStates.map((state) => revealOne(state, false)));
             updateScoreSummary(true);
+            // Hide all individual check buttons
+            questionWrapEl.querySelectorAll('[data-check]').forEach(b => b.style.display = 'none');
           } finally {
             updateRevealAllState();
           }
         };
       }
 
-      if (scoreSummaryEl) {
-        scoreSummaryEl.textContent = `正解 0 / ${currentQuestionStates.length}（判定済み 0問）`;
-        scoreSummaryEl.className = 'rounded-full border border-rose-200 bg-white/80 px-3 py-1 text-xs font-black text-rose-700';
-        scoreSummaryEl.classList.remove('hidden');
-      }
       updateRevealAllState();
     };
 
     const loadReviewQuestions = async () => {
+      // Not used directly in 5-batch mode, but available
       resetWeakBatchState();
       servedQuestionIds = new Set();
       if (!currentUser) {
-        resetWeakBatchState();
-        questionWrapEl.classList.add('hidden');
-        setStatus('ログインすると弱点克服モードを利用できます。');
+        setStatus('ログインしてください。');
         return;
       }
-      setStatus(selectedDomain ? `復習問題を取得中... (${selectedDomain})` : '復習問題を取得中...');
+      setStatus('問題を読み込んでいます...');
       try {
         const data = await fetchReviewList();
         renderQuestions(data);
       } catch (e) {
-        resetWeakBatchState();
-        questionWrapEl.classList.add('hidden');
-        setStatus(`取得に失敗しました: ${e.message}`, 'text-rose-500');
+        setStatus(`Error: ${e.message}`, 'text-rose-500');
       }
     };
 
     const loadWeakFiveBatch = async () => {
       if (!currentUser) {
-        resetWeakBatchState();
-        questionWrapEl.classList.add('hidden');
-        setStatus('ログインすると苦手5問を表示できます。');
+        openAuthModal('ログインしてください。');
         return;
       }
       isWeakBatchMode = true;
       updateNextWeakFiveButton();
-      setStatus(selectedDomain ? `苦手問題を5問抽出中... (${selectedDomain})` : '苦手問題を5問抽出中...');
+      setStatus('弱点データを分析中...');
       try {
         const data = await fetchReviewList();
         const batch = pickWeakBatch(data);
         renderQuestions(batch);
       } catch (e) {
         resetWeakBatchState();
-        questionWrapEl.classList.add('hidden');
-        setStatus(`取得に失敗しました: ${e.message}`, 'text-rose-500');
+        setStatus(`読み込み失敗: ${e.message}`, 'text-rose-500');
       }
     };
 
@@ -523,19 +623,8 @@
     const setIdleStatus = () => {
       resetWeakBatchState();
       questionWrapEl.classList.add('hidden');
-      if (currentUser) {
-        if (selectedDomain) {
-          setStatus(`ジャンル「${selectedDomain}」で準備完了。ボタンを押すと問題を表示します。`);
-        } else {
-          setStatus('ボタンを押すと問題を表示します。');
-        }
-      } else {
-        if (selectedDomain) {
-          setStatus(`ジャンル「${selectedDomain}」を選択中。ログインしてボタンを押すと問題を表示できます。`);
-        } else {
-          setStatus('ログインしてボタンを押すと問題を表示できます。');
-        }
-      }
+      reviewHero.classList.remove('hidden');
+      setStatus('');
     };
 
     const checkSession = async () => {
@@ -593,7 +682,17 @@
       }
     });
 
-    openAuthBtn.addEventListener('click', openAuthModal);
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', async () => {
+        if (!confirm('ログアウトしますか？')) return;
+        await fetch('/index.php?r=/logout');
+        currentUser = null;
+        updateHeader();
+        setIdleStatus();
+      });
+    }
+
+    loginBtn.addEventListener('click', () => openAuthModal());
     closeAuthBtn.addEventListener('click', closeAuthModal);
     loadWeakFiveBtn.addEventListener('click', loadWeakFiveQuestions);
     nextWeakFiveBtn?.addEventListener('click', loadWeakFiveBatch);

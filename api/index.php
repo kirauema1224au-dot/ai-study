@@ -85,7 +85,7 @@ if ($route === '/login' && $method === 'POST') {
   if ($user && password_verify($req['password'], $user['password_hash'])) {
     $_SESSION['user_id'] = $user['user_id'];
     $_SESSION['username'] = $user['username'];
-    respond(200, ["ok" => true, "message" => "Logged in", "user" => ["id" => $user['user_id'], "name" => $user['username']]]);
+    respond(200, ["ok" => true, "message" => "Logged in", "user" => ["id" => $user['user_id'], "name" => $user['username'], "avatar_seed" => $user['avatar_seed'] ?? null]]);
   } else {
     respond(401, ["ok" => false, "error" => "Invalid credentials"]);
   }
@@ -189,18 +189,39 @@ if ($route === '/me') {
     $stmt->execute([':uid' => $uid]);
     $count = $stmt->fetchColumn();
 
+    // Get user details
+    $stmtUser = $pdo->prepare("SELECT username, avatar_seed FROM users WHERE user_id = :uid");
+    $stmtUser->execute([':uid' => $uid]);
+    $u = $stmtUser->fetch();
+
     respond(200, [
       "ok" => true,
       "logged_in" => true,
       "user" => [
         "id" => $uid,
-        "name" => $_SESSION['username'],
+        "name" => $u['username'],
+        "avatar_seed" => $u['avatar_seed'],
         "created_questions_count" => (int) $count
       ]
     ]);
   } else {
     respond(200, ["ok" => true, "logged_in" => false]);
   }
+}
+
+if ($route === '/profile' && $method === 'POST') {
+  ensureSchema($pdo);
+  $uid = requireLogin();
+  $raw = file_get_contents('php://input');
+  $req = json_decode($raw, true);
+
+  if (isset($req['avatar_seed'])) {
+    $seed = substr((string)$req['avatar_seed'], 0, 64);
+    $stmt = $pdo->prepare("UPDATE users SET avatar_seed = :seed WHERE user_id = :uid");
+    $stmt->execute([':seed' => $seed, ':uid' => $uid]);
+    respond(200, ["ok" => true, "message" => "Avatar updated"]);
+  }
+  respond(400, ["ok" => false, "error" => "No valid fields to update"]);
 }
 
 // ... (DB Connection Setup maintained here in original file, skipping to next change) ...
@@ -554,9 +575,12 @@ function ensureSchema(PDO $pdo): void
       user_id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
       username VARCHAR(64) NOT NULL UNIQUE,
       password_hash VARCHAR(255) NOT NULL,
+      avatar_seed VARCHAR(64) DEFAULT NULL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_unicode_ci;
   ");
+
+  execIgnore($pdo, "ALTER TABLE users ADD COLUMN avatar_seed VARCHAR(64) DEFAULT NULL");
 
   $pdo->exec("
     CREATE TABLE IF NOT EXISTS answers (

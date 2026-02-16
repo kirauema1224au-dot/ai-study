@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="ja">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>成績分析</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap"
+    rel="stylesheet">
+  <style type="text/tailwindcss">
+    :root {
+      --bg-gradient: linear-gradient(135deg, #fef9c3 0%, #d8b4fe 50%, #818cf8 100%);
+    }
+
+    body {
+      @apply min-h-screen flex items-center justify-center p-4 md:p-6 text-slate-800;
+      font-family: "M PLUS Rounded 1c", sans-serif;
+      background: var(--bg-gradient);
+      background-size: 400% 400%;
+      animation: gradientBG 15s ease infinite;
+    }
+
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .main-card {
+      @apply rounded-[48px] border border-white/40 max-w-6xl w-full p-8 md:p-16 relative overflow-hidden;
+      background: rgba(255, 255, 255, 0.6);
+      -webkit-backdrop-filter: blur(20px);
+      backdrop-filter: blur(20px);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1), inset 0 0 20px rgba(255, 255, 255, 0.5);
+    }
+  </style>
+</head>
+
+<body>
+  <main class="main-card">
+    <div class="absolute -top-20 -right-20 w-df h-96 bg-emerald-300/20 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute -bottom-20 -left-20 w-96 h-96 bg-teal-300/20 rounded-full blur-3xl pointer-events-none"></div>
+
+    <header class="flex flex-wrap items-center justify-between gap-3 relative z-10">
+      <div>
+        <p
+          class="inline-block rounded-full bg-white/50 border border-white/60 px-4 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-emerald-600 shadow-sm backdrop-blur-md">
+          Stats Dashboard
+        </p>
+        <h1 class="mt-4 text-3xl md:text-5xl font-black tracking-tight text-slate-800">成績分析</h1>
+        <p class="mt-3 text-sm font-bold text-slate-500">あなたの学習データを可視化します。</p>
+      </div>
+      <div class="flex flex-wrap gap-3">
+        <a href="/study/index.html"
+          class="inline-flex items-center rounded-2xl border border-white/60 bg-white/40 px-5 py-3 text-sm font-black text-slate-700 shadow-sm backdrop-blur-md transition hover:bg-white hover:text-indigo-600 hover:shadow-md hover:-translate-y-0.5">
+          ホーム
+        </a>
+        <a href="/study/review.html"
+          class="inline-flex items-center rounded-2xl bg-gradient-to-r from-rose-400 to-rose-500 px-5 py-3 text-sm font-black text-white shadow-lg shadow-rose-200 transition hover:scale-105 active:scale-95">
+          🔥 弱点克服へ
+        </a>
+      </div>
+    </header>
+
+    <div class="mt-10 flex flex-wrap items-center gap-3 relative z-10">
+      <span id="user-name"
+        class="hidden rounded-full bg-emerald-100/80 px-4 py-1.5 text-sm font-black text-emerald-700 border border-emerald-200"></span>
+      <button id="open-auth"
+        class="inline-flex items-center rounded-xl bg-emerald-500 px-6 py-3 text-sm font-black text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-600 hover:-translate-y-0.5">
+        ログインして分析
+      </button>
+      <button id="refresh"
+        class="hidden inline-flex items-center rounded-xl border-2 border-emerald-100 bg-white/50 px-4 py-2 text-sm font-black text-emerald-600 transition hover:bg-emerald-50 hover:border-emerald-300">
+        🔄 最新化
+      </button>
+    </div>
+
+    <div id="status" class="mt-6 text-sm font-bold text-slate-400 animate-pulse relative z-10">読み込み中...</div>
+
+    <section id="dashboard" class="mt-8 hidden space-y-6 relative z-10">
+      <div id="overall-card"
+        class="rounded-[32px] border border-white/60 bg-gradient-to-br from-emerald-50/80 to-teal-50/80 p-8 shadow-sm backdrop-blur-md relative overflow-hidden group">
+        <div
+          class="absolute top-0 right-0 w-32 h-32 bg-emerald-200/20 rounded-full blur-2xl transition-all group-hover:scale-150">
+        </div>
+      </div>
+      <div id="genre-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+    </section>
+    </section>
+  </main>
+
+  <div id="auth-modal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-slate-900/45 backdrop-blur-sm"></div>
+    <div class="absolute left-1/2 top-1/2 w-full max-w-md -translate-x-1/2 -translate-y-1/2 p-4">
+      <div class="rounded-3xl bg-white p-6 shadow-2xl">
+        <h2 class="text-xl font-black text-slate-800">ログイン</h2>
+        <p class="mt-1 text-xs font-bold text-slate-500">成績分析にはログインが必要です。</p>
+        <form id="auth-form" class="mt-5 space-y-3">
+          <input id="auth-user" type="text" required placeholder="ユーザー名"
+            class="w-full rounded-xl border border-slate-200 px-3 py-2 font-bold text-slate-700 outline-none focus:border-emerald-400">
+          <input id="auth-pass" type="password" required placeholder="パスワード"
+            class="w-full rounded-xl border border-slate-200 px-3 py-2 font-bold text-slate-700 outline-none focus:border-emerald-400">
+          <div class="flex gap-2">
+            <button type="submit" name="action" value="login"
+              class="flex-1 rounded-xl bg-emerald-600 py-2 text-sm font-black text-white hover:bg-emerald-700">
+              ログイン
+            </button>
+            <button type="submit" name="action" value="register"
+              class="flex-1 rounded-xl bg-slate-100 py-2 text-sm font-black text-slate-700 hover:bg-slate-200">
+              新規登録
+            </button>
+          </div>
+        </form>
+        <div id="auth-msg" class="mt-3 min-h-[1.25rem] text-xs font-bold text-rose-500"></div>
+        <button id="close-auth"
+          class="mt-2 inline-flex rounded-lg border border-slate-200 px-3 py-1 text-xs font-black text-slate-500 hover:bg-slate-50">
+          閉じる
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const statusEl = document.getElementById('status');
+    const dashboardEl = document.getElementById('dashboard');
+    const overallEl = document.getElementById('overall-card');
+    const genreListEl = document.getElementById('genre-list');
+    const userNameEl = document.getElementById('user-name');
+    const openAuthBtn = document.getElementById('open-auth');
+    const refreshBtn = document.getElementById('refresh');
+    const authModal = document.getElementById('auth-modal');
+    const closeAuthBtn = document.getElementById('close-auth');
+    const authForm = document.getElementById('auth-form');
+    const authMsgEl = document.getElementById('auth-msg');
+
+    let currentUser = null;
+
+    const setStatus = (text, cls = 'text-slate-500') => {
+      statusEl.textContent = text;
+      statusEl.className = `mt-4 text-sm font-bold ${cls}`;
+    };
+
+    const openAuthModal = () => authModal.classList.remove('hidden');
+    const closeAuthModal = () => {
+      authModal.classList.add('hidden');
+      authMsgEl.textContent = '';
+    };
+
+    const updateHeader = () => {
+      if (currentUser) {
+        userNameEl.textContent = `ログイン中: ${currentUser.name}`;
+        userNameEl.classList.remove('hidden');
+        openAuthBtn.classList.add('hidden');
+        refreshBtn.classList.remove('hidden');
+      } else {
+        userNameEl.classList.add('hidden');
+        openAuthBtn.classList.remove('hidden');
+        refreshBtn.classList.add('hidden');
+      }
+    };
+
+    const renderStats = (data) => {
+      const overall = data.overall || {};
+      const acc = overall.accuracy ?? '--';
+      const correct = overall.correct ?? 0;
+      const total = overall.total ?? 0;
+
+      overallEl.innerHTML = `
+        <p class="text-xs font-black uppercase tracking-wider text-emerald-700">Overall Accuracy</p>
+        <p class="mt-2 text-4xl font-black text-emerald-800">${acc}%</p>
+        <p class="mt-1 text-sm font-bold text-slate-600">${correct}/${total} 正解</p>
+      `;
+
+      const genres = (data.genres || []).slice().sort((a, b) => (a.accuracy ?? 101) - (b.accuracy ?? 101));
+      if (genres.length === 0) {
+        genreListEl.innerHTML = '<div class="rounded-xl border border-slate-200 bg-white/75 p-4 text-sm font-bold text-slate-500">分析データがありません。</div>';
+        return;
+      }
+
+      genreListEl.innerHTML = genres.map((g) => {
+        const accVal = g.accuracy ?? 0;
+        const width = Math.max(0, Math.min(100, accVal));
+        const color = accVal < 40 ? '#f87171' : accVal < 70 ? '#f59e0b' : '#10b981';
+        const name = (g.name || '未分類').toString();
+        return `
+          <button type="button" data-domain="${encodeURIComponent(name)}"
+            class="w-full rounded-xl border border-slate-200 bg-white/80 p-4 text-left transition hover:bg-emerald-50/70 hover:border-emerald-300">
+            <div class="mb-2 flex items-center justify-between text-sm font-black text-slate-700">
+              <span>${name}</span>
+              <span>${g.correct}/${g.total} (${accVal}%)</span>
+            </div>
+            <div class="h-2 rounded-full bg-slate-200">
+              <div class="h-2 rounded-full" style="width:${width}%; background:${color};"></div>
+            </div>
+            <p class="mt-2 text-[11px] font-black text-emerald-700">クリックして弱点克服で解く</p>
+          </button>
+        `;
+      }).join('');
+
+      genreListEl.querySelectorAll('[data-domain]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const encoded = btn.getAttribute('data-domain') || '';
+          const domain = decodeURIComponent(encoded);
+          const q = domain ? `?domain=${encodeURIComponent(domain)}` : '';
+          window.location.href = `/study/review.html${q}`;
+        });
+      });
+    };
+
+    const loadStats = async () => {
+      if (!currentUser) {
+        dashboardEl.classList.add('hidden');
+        setStatus('ログインすると成績分析を利用できます。');
+        return;
+      }
+      setStatus('成績を取得中...');
+      try {
+        const res = await fetch('/index.php?r=/stats');
+        const data = await res.json();
+        if (!res.ok || data.ok === false) {
+          throw new Error(data.error || 'failed');
+        }
+        renderStats(data);
+        dashboardEl.classList.remove('hidden');
+        setStatus('最新の成績を表示しました。', 'text-emerald-700');
+      } catch (e) {
+        dashboardEl.classList.add('hidden');
+        setStatus(`取得に失敗しました: ${e.message}`, 'text-rose-500');
+      }
+    };
+
+    const checkSession = async () => {
+      try {
+        const res = await fetch('/index.php?r=/me');
+        const data = await res.json();
+        currentUser = data?.logged_in ? data.user : null;
+      } catch (_) {
+        currentUser = null;
+      }
+      updateHeader();
+      await loadStats();
+    };
+
+    authForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const action = e.submitter?.value || 'login';
+      const endpoint = action === 'register' ? '/index.php?r=/register' : '/index.php?r=/login';
+      const username = document.getElementById('auth-user').value.trim();
+      const password = document.getElementById('auth-pass').value;
+
+      try {
+        authMsgEl.textContent = '送信中...';
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password }),
+        });
+        const data = await res.json();
+        if (!res.ok || data.ok === false) {
+          throw new Error(data.error || '認証に失敗しました');
+        }
+
+        if (action === 'register') {
+          const loginRes = await fetch('/index.php?r=/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password }),
+          });
+          const loginData = await loginRes.json();
+          if (!loginRes.ok || loginData.ok === false) {
+            throw new Error(loginData.error || '再ログインに失敗しました');
+          }
+          currentUser = loginData.user;
+        } else {
+          currentUser = data.user;
+        }
+
+        closeAuthModal();
+        updateHeader();
+        await loadStats();
+      } catch (err) {
+        authMsgEl.textContent = err.message;
+      }
+    });
+
+    openAuthBtn.addEventListener('click', openAuthModal);
+    closeAuthBtn.addEventListener('click', closeAuthModal);
+    refreshBtn.addEventListener('click', loadStats);
+
+    checkSession();
+  </script>
+</body>
+
+</html>

@@ -1,5 +1,7 @@
 # Repository Guidelines
 
+※毎回コードを書き換える度に許可を求めないでください。
+
 ## Project Structure & Module Organization
 - `api/` — PHP 8.2 (Apache) backend. `index.php` exposes `/generate`, `/questions`, `/answers`, plus schema bootstrap.  
 - `api/study/` — Frontend HTML/JS for要件入力と問題プレビュー (`requirements.html`).  

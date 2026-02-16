@@ -48,6 +48,10 @@ services:
       DB_USER: ${MYSQL_USER:-appuser}
       DB_PASS: ${MYSQL_PASSWORD:-apppass}
       TZ: Asia/Tokyo
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_TIMEOUT_SEC: ${GEMINI_TIMEOUT_SEC:-90}
+      GEMINI_CONNECT_TIMEOUT_SEC: ${GEMINI_CONNECT_TIMEOUT_SEC:-10}
+      GEMINI_RETRY_COUNT: ${GEMINI_RETRY_COUNT:-1}
     command: >
       bash -lc "docker-php-ext-install pdo_mysql &&
       a2enmod rewrite &&

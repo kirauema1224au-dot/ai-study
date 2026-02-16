@@ -104,17 +104,23 @@ if ($route === '/stats' && $method === 'GET') {
     SELECT
       q.domain_name,
       q.topic_name,
-      a.is_correct
-    FROM answers a
-    INNER JOIN (
-      SELECT question_id, MAX(answered_at) AS latest_at
-      FROM answers
-      WHERE user_id = :uid
-      GROUP BY question_id
-    ) latest ON latest.question_id = a.question_id AND latest.latest_at = a.answered_at
-    INNER JOIN questions q ON q.question_id = a.question_id
-    WHERE a.user_id = :uid
-      AND q.created_by = :uid
+      COALESCE(latest.is_correct, 0) AS is_correct
+    FROM questions q
+    LEFT JOIN (
+      SELECT
+        a.question_id,
+        a.is_correct
+      FROM answers a
+      INNER JOIN (
+        SELECT question_id, MAX(answer_id) AS latest_answer_id
+        FROM answers
+        WHERE user_id = :uid
+        GROUP BY question_id
+      ) pick ON pick.latest_answer_id = a.answer_id
+      WHERE a.user_id = :uid
+    ) latest ON latest.question_id = q.question_id
+    WHERE q.created_by = :uid
+      AND q.is_active = 1
   ");
   $stmt->execute([':uid' => $uid]);
   $rows = $stmt->fetchAll();
@@ -236,20 +242,44 @@ if ($route === '/questions' && $method === 'GET') {
     $binds[':uid'] = (int) $_SESSION['user_id'];
   } elseif (isset($_GET['scope']) && $_GET['scope'] === 'review') {
     $uid = requireLogin();
+    $recheckDays = max(1, min(30, (int) (getenv('REVIEW_RECHECK_DAYS') ?: 7)));
+    $recheckBefore = date('Y-m-d H:i:s', time() - ($recheckDays * 86400));
     $latestSub = "
-      SELECT a1.question_id, a1.is_correct, a1.answered_at
-      FROM answers a1
-      WHERE a1.user_id = :uid
-        AND a1.answered_at = (
-          SELECT MAX(a2.answered_at)
-          FROM answers a2
-          WHERE a2.user_id = a1.user_id AND a2.question_id = a1.question_id
-        )
+      SELECT
+        a.question_id,
+        a.is_correct,
+        a.answered_at
+      FROM answers a
+      INNER JOIN (
+        SELECT question_id, MAX(answer_id) AS latest_answer_id
+        FROM answers
+        WHERE user_id = :uid
+        GROUP BY question_id
+      ) pick ON pick.latest_answer_id = a.answer_id
+      WHERE a.user_id = :uid
+    ";
+    $answerStatsSub = "
+      SELECT
+        question_id,
+        SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) AS correct_count
+      FROM answers
+      WHERE user_id = :uid
+      GROUP BY question_id
     ";
     $joins[] = "LEFT JOIN ({$latestSub}) latest ON latest.question_id = q.question_id";
-    $where[] = 'latest.is_correct = 0';
+    $joins[] = "LEFT JOIN ({$answerStatsSub}) answer_stats ON answer_stats.question_id = q.question_id";
+    $where[] = "(
+      latest.is_correct = 0
+      OR latest.is_correct IS NULL
+      OR (
+        latest.is_correct = 1
+        AND COALESCE(answer_stats.correct_count, 0) = 1
+        AND latest.answered_at <= :review_recheck_before
+      )
+    )";
     $where[] = 'q.created_by = :uid';
     $binds[':uid'] = (int) $uid;
+    $binds[':review_recheck_before'] = $recheckBefore;
   } elseif (isset($_GET['scope']) && $_GET['scope'] !== '') {
     respond(400, ["ok" => false, "error" => "Invalid scope"]);
   }
@@ -437,7 +467,7 @@ if ($route === '/generate' && $method === 'POST') {
     'count' => $count,
   ]);
 
-  $apiKey = getenv('GEMINI_API_KEY') ?: 'AIzaSyAPJCyRNl0EFxbHfV4qxKukyRdIDcS9lsI';
+  $apiKey = getenv('GEMINI_API_KEY') ?: 'AIzaSyCXTPCRqiIcN71fOgI2nEzd6KeWKeOGMIM';
   if ($apiKey === '') {
     respond(500, ["ok" => false, "error" => "GEMINI_API_KEY is not set on server"]);
   }
@@ -740,6 +770,9 @@ function callGemini(string $prompt, string $apiKey): string
 {
   $apiVersion = getenv('GEMINI_API_VERSION') ?: 'v1';
   $model = getenv('GEMINI_MODEL') ?: 'gemini-2.5-flash';
+  $timeoutSec = max(10, (int) (getenv('GEMINI_TIMEOUT_SEC') ?: 90));
+  $connectTimeoutSec = max(3, (int) (getenv('GEMINI_CONNECT_TIMEOUT_SEC') ?: 10));
+  $retryCount = max(0, min(3, (int) (getenv('GEMINI_RETRY_COUNT') ?: 1)));
   if (str_starts_with($model, 'models/')) {
     $model = substr($model, strlen('models/'));
   }
@@ -753,34 +786,52 @@ function callGemini(string $prompt, string $apiKey): string
     ],
   ], JSON_UNESCAPED_UNICODE);
 
-  $ch = curl_init($url);
-  curl_setopt_array($ch, [
-    CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_POST => true,
-    CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
-    CURLOPT_POSTFIELDS => $payload,
-    CURLOPT_TIMEOUT => 30,
-  ]);
-  $res = curl_exec($ch);
-  if ($res === false) {
-    $err = curl_error($ch);
+  $attempts = 1 + $retryCount;
+  $lastErr = '';
+  for ($attempt = 1; $attempt <= $attempts; $attempt++) {
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+      CURLOPT_RETURNTRANSFER => true,
+      CURLOPT_POST => true,
+      CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+      CURLOPT_POSTFIELDS => $payload,
+      CURLOPT_CONNECTTIMEOUT => $connectTimeoutSec,
+      CURLOPT_TIMEOUT => $timeoutSec,
+    ]);
+    $res = curl_exec($ch);
+    if ($res === false) {
+      $lastErr = curl_error($ch);
+      curl_close($ch);
+      if ($attempt < $attempts) {
+        usleep(500000);
+        continue;
+      }
+      throw new RuntimeException("Gemini request failed: {$lastErr}");
+    }
+
+    $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
-    throw new RuntimeException("Gemini request failed: {$err}");
+    if ($status < 200 || $status >= 300) {
+      $lastErr = "Gemini HTTP {$status}: {$res}";
+      if ($attempt < $attempts && ($status === 429 || $status >= 500)) {
+        usleep(500000);
+        continue;
+      }
+      throw new RuntimeException($lastErr);
+    }
+
+    $data = json_decode($res, true);
+    if (!is_array($data)) {
+      throw new RuntimeException("Gemini invalid JSON response");
+    }
+    $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? '';
+    if (!is_string($text) || $text === '') {
+      throw new RuntimeException("Gemini returned empty text");
+    }
+    return $text;
   }
-  $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-  curl_close($ch);
-  if ($status < 200 || $status >= 300) {
-    throw new RuntimeException("Gemini HTTP {$status}: {$res}");
-  }
-  $data = json_decode($res, true);
-  if (!is_array($data)) {
-    throw new RuntimeException("Gemini invalid JSON response");
-  }
-  $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? '';
-  if (!is_string($text) || $text === '') {
-    throw new RuntimeException("Gemini returned empty text");
-  }
-  return $text;
+
+  throw new RuntimeException("Gemini request failed: {$lastErr}");
 }
 
 function normalizeQuestionsFromGemini(string $text, string $genre, string $topic): array

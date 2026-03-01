@@ -286,7 +286,10 @@
     const authForm = document.getElementById('auth-form');
     const authMsgEl = document.getElementById('auth-msg');
     const domainFilterEl = document.getElementById('domain-filter');
-    const initialDomain = (new URLSearchParams(window.location.search).get('domain') || '').trim();
+    const reviewParams = new URLSearchParams(window.location.search);
+    const initialDomain = (reviewParams.get('domain') || '').trim();
+    const initialExam = (reviewParams.get('exam') || '').trim();
+    const initialTopic = (reviewParams.get('topic') || '').trim();
 
     // Avatar Elements
     const avatarBtn = document.getElementById('user-avatar-btn');
@@ -303,6 +306,8 @@
 
     const getAvatarUrl = (seed) => `https://api.dicebear.com/7.x/notionists/svg?seed=${seed}&backgroundColor=e0e7ff`;
     let selectedDomain = initialDomain;
+    let selectedExam = initialExam;
+    let selectedTopic = initialTopic;
     let isWeakBatchMode = false;
     let currentBatchIds = [];
     let answeredBatchIds = new Set();
@@ -346,8 +351,12 @@
 
     const updateDomainBadge = () => {
       if (!domainFilterEl) return;
-      if (selectedDomain) {
-        domainFilterEl.textContent = `ジャンル: ${selectedDomain}`;
+      const parts = [];
+      if (selectedDomain) parts.push(`ジャンル: ${selectedDomain}`);
+      if (selectedExam) parts.push(`資格名: ${selectedExam}`);
+      if (selectedTopic) parts.push(`要件: ${selectedTopic}`);
+      if (parts.length > 0) {
+        domainFilterEl.textContent = parts.join(' / ');
         domainFilterEl.classList.remove('hidden');
       } else {
         domainFilterEl.textContent = '';
@@ -359,6 +368,12 @@
       let url = '/index.php?r=/questions&scope=review';
       if (selectedDomain) {
         url += `&domain=${encodeURIComponent(selectedDomain)}`;
+      }
+      if (selectedExam) {
+        url += `&exam=${encodeURIComponent(selectedExam)}`;
+      }
+      if (selectedTopic) {
+        url += `&topic=${encodeURIComponent(selectedTopic)}`;
       }
       return url;
     };

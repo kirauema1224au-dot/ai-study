@@ -102,6 +102,7 @@ if ($route === '/stats' && $method === 'GET') {
 
   $stmt = $pdo->prepare("
     SELECT
+      q.exam_name,
       q.domain_name,
       q.topic_name,
       COALESCE(latest.is_correct, 0) AS is_correct
@@ -119,7 +120,7 @@ if ($route === '/stats' && $method === 'GET') {
       ) pick ON pick.latest_answer_id = a.answer_id
       WHERE a.user_id = :uid
     ) latest ON latest.question_id = q.question_id
-    WHERE q.created_by = :uid
+    WHERE (q.created_by = :uid OR latest.question_id IS NOT NULL)
       AND q.is_active = 1
   ");
   $stmt->execute([':uid' => $uid]);
@@ -127,6 +128,7 @@ if ($route === '/stats' && $method === 'GET') {
 
   $genreStats = [];
   $topicStats = [];
+  $requirementStats = [];
   $total = 0;
   $correct = 0;
 
@@ -137,7 +139,11 @@ if ($route === '/stats' && $method === 'GET') {
       $correct++;
     }
 
-    $genre = (string) $r['domain_name'];
+    $genreRaw = trim((string) ($r['domain_name'] ?? ''));
+    $genre = $genreRaw;
+    if ($genre === '') {
+      $genre = '未設定';
+    }
     if (!isset($genreStats[$genre])) {
       $genreStats[$genre] = ['name' => $genre, 'correct' => 0, 'total' => 0];
     }
@@ -146,13 +152,40 @@ if ($route === '/stats' && $method === 'GET') {
       $genreStats[$genre]['correct']++;
     }
 
-    $topic = (string) $r['topic_name'];
+    $topicRaw = trim((string) ($r['topic_name'] ?? ''));
+    $topic = $topicRaw;
+    if ($topic === '') {
+      $topic = '未設定';
+    }
     if (!isset($topicStats[$topic])) {
       $topicStats[$topic] = ['name' => $topic, 'correct' => 0, 'total' => 0];
     }
     $topicStats[$topic]['total']++;
     if ($isCorrect) {
       $topicStats[$topic]['correct']++;
+    }
+
+    $examRaw = trim((string) ($r['exam_name'] ?? ''));
+    $exam = $examRaw;
+    if ($exam === '') {
+      $exam = '未設定';
+    }
+    $reqKey = $genre . "\x1F" . $exam . "\x1F" . $topic;
+    if (!isset($requirementStats[$reqKey])) {
+      $requirementStats[$reqKey] = [
+        'category_name' => $genre,
+        'exam_name' => $exam,
+        'requirement_name' => $topic,
+        'category_filter' => $genreRaw,
+        'exam_filter' => $examRaw,
+        'requirement_filter' => $topicRaw,
+        'correct' => 0,
+        'total' => 0,
+      ];
+    }
+    $requirementStats[$reqKey]['total']++;
+    if ($isCorrect) {
+      $requirementStats[$reqKey]['correct']++;
     }
   }
 
@@ -168,6 +201,13 @@ if ($route === '/stats' && $method === 'GET') {
     return $t;
   }, array_values($topicStats));
 
+  $requirementOut = array_map(function ($item) use ($calcAcc) {
+    $item['domain_name'] = $item['category_name'];
+    $item['topic_name'] = $item['requirement_name'];
+    $item['accuracy'] = $calcAcc($item['correct'], $item['total']);
+    return $item;
+  }, array_values($requirementStats));
+
   respond(200, [
     "ok" => true,
     "overall" => [
@@ -175,6 +215,7 @@ if ($route === '/stats' && $method === 'GET') {
       "total" => $total,
       "accuracy" => $calcAcc($correct, $total)
     ],
+    "requirement_stats" => $requirementOut,
     "genres" => $genreOut,
     "topics" => $topicOut
   ]);
@@ -251,6 +292,10 @@ if ($route === '/questions' && $method === 'GET') {
     $where[] = 'q.domain_name = :domain';
     $binds[':domain'] = (string) $_GET['domain'];
   }
+  if (isset($_GET['exam']) && $_GET['exam'] !== '') {
+    $where[] = 'q.exam_name = :exam';
+    $binds[':exam'] = (string) $_GET['exam'];
+  }
   if (isset($_GET['topic']) && $_GET['topic'] !== '') {
     $where[] = 'q.topic_name = :topic';
     $binds[':topic'] = (string) $_GET['topic'];
@@ -298,7 +343,7 @@ if ($route === '/questions' && $method === 'GET') {
         AND latest.answered_at <= :review_recheck_before
       )
     )";
-    $where[] = 'q.created_by = :uid';
+    $where[] = '(q.created_by = :uid OR latest.question_id IS NOT NULL)';
     $binds[':uid'] = (int) $uid;
     $binds[':review_recheck_before'] = $recheckBefore;
   } elseif (isset($_GET['scope']) && $_GET['scope'] !== '') {
@@ -311,7 +356,7 @@ if ($route === '/questions' && $method === 'GET') {
   }
   $sql = "
     SELECT
-      q.question_id, q.domain_name, q.topic_name, q.title, q.stem, q.correct_label, q.explanation,
+      q.question_id, q.exam_name, q.domain_name, q.topic_name, q.title, q.stem, q.correct_label, q.explanation,
       c.choice_id, c.choice_label, c.choice_text,
       stats.correct_count, stats.total_count
     FROM questions q
@@ -336,6 +381,7 @@ if ($route === '/questions' && $method === 'GET') {
     if (!isset($out[$qid])) {
       $out[$qid] = [
         "question_id" => $qid,
+        "exam_name" => $r["exam_name"],
         "domain_name" => $r["domain_name"],
         "topic_name" => $r["topic_name"],
         "title" => $r["title"],
@@ -474,6 +520,10 @@ if ($route === '/generate' && $method === 'POST') {
   $outputFmt = trim((string) ($req['output_format'] ?? ''));
   $constraints = trim((string) ($req['constraints'] ?? ''));
   $notes = trim((string) ($req['notes'] ?? ''));
+  $examNameReq = trim((string) ($req['exam_name'] ?? ''));
+  if ($examNameReq === '') {
+    $examNameReq = extractExamNameFromConstraints($constraints);
+  }
   $countReq = isset($req['count']) ? (int) $req['count'] : 5;
   $count = max(1, min($countReq, 50));
 
@@ -497,12 +547,27 @@ if ($route === '/generate' && $method === 'POST') {
     $llmJson = callGemini($prompt, $apiKey);
     $payload = normalizeQuestionsFromGemini($llmJson, $genre, $problemType);
     $payload = validateGeneratedQuestions($payload);
+    if ($examNameReq !== '') {
+      foreach ($payload as &$q) {
+        if (!isset($q['exam_name']) || trim((string) $q['exam_name']) === '') {
+          $q['exam_name'] = $examNameReq;
+        }
+      }
+      unset($q);
+    }
 
     if ($genre !== '' && $problemType !== '') {
-      $stmtDel = $pdo->prepare("DELETE FROM question_choices WHERE question_id IN (SELECT question_id FROM questions WHERE domain_name = :domain AND topic_name = :topic)");
-      $stmtDel->execute([':domain' => $genre, ':topic' => $problemType]);
-      $stmtDelQ = $pdo->prepare("DELETE FROM questions WHERE domain_name = :domain AND topic_name = :topic");
-      $stmtDelQ->execute([':domain' => $genre, ':topic' => $problemType]);
+      if ($examNameReq !== '') {
+        $stmtDel = $pdo->prepare("DELETE FROM question_choices WHERE question_id IN (SELECT question_id FROM questions WHERE domain_name = :domain AND topic_name = :topic AND (exam_name = :exam OR exam_name = 'study'))");
+        $stmtDel->execute([':domain' => $genre, ':topic' => $problemType, ':exam' => $examNameReq]);
+        $stmtDelQ = $pdo->prepare("DELETE FROM questions WHERE domain_name = :domain AND topic_name = :topic AND (exam_name = :exam OR exam_name = 'study')");
+        $stmtDelQ->execute([':domain' => $genre, ':topic' => $problemType, ':exam' => $examNameReq]);
+      } else {
+        $stmtDel = $pdo->prepare("DELETE FROM question_choices WHERE question_id IN (SELECT question_id FROM questions WHERE domain_name = :domain AND topic_name = :topic)");
+        $stmtDel->execute([':domain' => $genre, ':topic' => $problemType]);
+        $stmtDelQ = $pdo->prepare("DELETE FROM questions WHERE domain_name = :domain AND topic_name = :topic");
+        $stmtDelQ->execute([':domain' => $genre, ':topic' => $problemType]);
+      }
     }
 
     $createdBy = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
@@ -606,6 +671,20 @@ function execIgnore(PDO $pdo, string $sql): void
   } catch (PDOException $e) {
     // ignore if column exists, etc.
   }
+}
+
+function extractExamNameFromConstraints(string $constraints): string
+{
+  $constraints = trim($constraints);
+  if ($constraints === '') {
+    return '';
+  }
+  $normalized = str_replace("\xEF\xBC\x9A", ':', $constraints); // full-width colon -> ASCII colon
+  $parts = explode(':', $normalized, 2);
+  if (count($parts) === 2) {
+    return trim($parts[1]);
+  }
+  return $normalized;
 }
 
 function validateQuestion(mixed $q, int $idx): void
@@ -730,6 +809,7 @@ function saveQuestions(PDO $pdo, array $payload, bool $allowAutoId = true, bool 
       if ($returnSaved) {
         $saved[] = [
           'question_id' => $questionId,
+          'exam_name' => $examName,
           'domain_name' => (string) $q['domain_name'],
           'topic_name' => (string) $q['topic_name'],
           'title' => (string) $q['title'],

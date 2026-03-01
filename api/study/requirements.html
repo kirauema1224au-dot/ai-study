@@ -210,6 +210,28 @@
                 <p id="exam-hint" class="text-[10px] text-slate-400 mt-2 ml-2 hidden">※カテゴリを選ぶと表示されます</p>
               </div>
 
+              <!-- Test Play Area (Appears after Exam selection) -->
+              <div id="test-play-area"
+                class="hidden mb-6 p-6 rounded-2xl bg-indigo-50 border-2 border-dashed border-indigo-200">
+                <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                  <div class="flex-1">
+                    <h3 class="text-sm font-black text-indigo-700 mb-1 flex items-center gap-2">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                      </svg>
+                      実戦テストプレイ
+                    </h3>
+                    <p id="test-play-desc" class="text-xs text-indigo-600/80 font-bold">（資格名）のテストをランダムに20問出題</p>
+                  </div>
+                  <button id="btn-test-play"
+                    class="whitespace-nowrap bg-indigo-600 hover:bg-indigo-500 text-white font-black text-sm px-6 py-3 rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-2">
+                    <span>テスト開始</span>
+                    <span class="bg-white/20 px-2 py-0.5 rounded text-[10px]">20問</span>
+                  </button>
+                </div>
+              </div>
+
               <!-- 3. Requirement/Topic (Dependent on Exam) -->
               <div class="group relative" id="topic-area">
                 <label class="mb-2 ml-2 block text-xs font-black uppercase tracking-widest text-slate-400">3.
@@ -629,18 +651,30 @@
       const exams = chipData.category_to_exams[categoryName] || [];
       const examArea = document.getElementById('exam-area');
       const examHint = document.getElementById('exam-hint');
+      const testPlayArea = document.getElementById('test-play-area');
 
       if (exams.length > 0) {
         examArea.classList.remove('opacity-50', 'pointer-events-none');
         examHint.classList.add('hidden');
+
+        const updateTestPlayText = (examName) => {
+          const testPlayDesc = document.getElementById('test-play-desc');
+          if (testPlayDesc) testPlayDesc.textContent = `${examName}のテストをランダムに20問出題`;
+        };
+
         renderChips('exam', exams, exams[0], (selectedExam) => {
           updateTopics(selectedExam);
+          testPlayArea.classList.remove('hidden'); // Show test play when exam is selected
+          updateTestPlayText(selectedExam);
         });
+        testPlayArea.classList.remove('hidden'); // Show initially for default selected
+        updateTestPlayText(exams[0]);
       } else {
         chips.exam.container.innerHTML = '';
         chips.exam.input.value = '';
         chips.topic.container.innerHTML = '';
         chips.topic.input.value = ''; // clear downstream
+        testPlayArea.classList.add('hidden');
       }
     }
 
@@ -667,15 +701,80 @@
       updateExams(selectedCategory);
     });
 
+    // --- Array Shuffle Helper ---
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    // --- Test Play Feature Logic ---
+    const btnTestPlay = document.getElementById('btn-test-play');
+    btnTestPlay.addEventListener('click', async () => {
+      const selectedExam = document.getElementById('exam').value;
+      if (!selectedExam) return;
+
+      const originalContent = btnTestPlay.innerHTML;
+      btnTestPlay.innerHTML = `
+          <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span>準備中...</span>
+      `;
+      btnTestPlay.style.pointerEvents = 'none';
+      statusEl.textContent = 'テスト問題をロードしています...';
+      statusEl.classList.remove('hidden');
+      statusEl.className = 'mb-4 text-center font-bold text-indigo-500';
+      genWrap.classList.add('hidden');
+
+      try {
+        // Fetch questions for the selected exam
+        const url = `/index.php?r=/questions&exam=${encodeURIComponent(selectedExam)}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('API failed.');
+        const data = await res.json();
+
+        let questions = Array.isArray(data) ? data : (data.questions || []);
+
+        // Shuffle and take up to 20
+        questions = shuffleArray(questions).slice(0, 20);
+
+        if (questions.length === 0) {
+          throw new Error('この資格の問題がまだデータベースにありません。先にAI生成をお試しください。');
+        }
+
+        // Success UI
+        btnTestPlay.innerHTML = originalContent;
+        btnTestPlay.style.pointerEvents = 'auto';
+
+        statusEl.textContent = `実戦テストプレイ開始: ${questions.length}問`;
+        statusEl.className = 'mb-4 text-center font-bold text-emerald-500';
+
+        renderQuestionCards(questions);
+        genWrap.classList.remove('hidden');
+        genWrap.scrollIntoView({ behavior: 'smooth' });
+
+      } catch (e) {
+        console.error(e);
+        btnTestPlay.innerHTML = originalContent;
+        btnTestPlay.style.pointerEvents = 'auto';
+        statusEl.textContent = e.message || 'エラーが発生しました';
+        statusEl.className = 'mb-4 text-center font-bold text-rose-500';
+      }
+    });
+
     // --- Generation Logic ---
     generateBtn.addEventListener('click', async () => {
       const originalContent = generateBtn.innerHTML;
       generateBtn.innerHTML = `
-            <svg class="animate-spin h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          < svg class="animate-spin h-6 w-6 text-white" xmlns = "http://www.w3.org/2000/svg" fill = "none" viewBox = "0 0 24 24" >
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <span class="ml-3">生成中...</span>
+            </svg >
+          <span class="ml-3">生成中...</span>
         `;
       generateBtn.style.pointerEvents = 'none';
       statusEl.textContent = 'AIが問題を生成しています...';
@@ -689,7 +788,7 @@
           problem_type: document.getElementById('topic').value || '', // Map Topic to Problem Type
           background: '',
           output_format: DEFAULT_OUTPUT_FORMAT,
-          constraints: `試験名:${document.getElementById('exam').value}`,
+          constraints: `試験名:${document.getElementById('exam').value} `,
           notes: '',
           count: parseInt(document.getElementById('count').value, 10) || 4
         };
@@ -714,7 +813,7 @@
           generateBtn.style.pointerEvents = 'auto';
         }, 3000);
 
-        statusEl.textContent = `生成成功: ${body.questions ? body.questions.length : 0}問`;
+        statusEl.textContent = `生成成功: ${body.questions ? body.questions.length : 0} 問`;
         statusEl.className = 'mb-4 text-center font-bold text-emerald-500';
 
         renderQuestionCards(body.questions || []);
